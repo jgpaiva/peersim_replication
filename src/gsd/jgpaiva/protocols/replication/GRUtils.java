@@ -6,28 +6,52 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Map;
 
 import peersim.core.Node;
 
 public class GRUtils {
-	static int getDeathTime(Node n) {
+	
+	/***************** DEATH TIME related functions ******************/
+	
+	public static Group getNextGroupDeath(Collection<Group> lst) {
+		Node node = null;
+		Group group = null;
+		int minTime = 0;
+
+		for (Group g : lst) {
+			for (Node n : g.getFinger()) {
+				if (node == null) {
+					node = n;
+					group = g;
+					minTime = getNodeDeath(n);
+				} else if (getNodeDeath(n) < minTime) {
+					node = n;
+					group = g;
+					minTime = getNodeDeath(n);
+				}
+			}
+		}
+		return group;
+	}
+
+	public static int getNodeDeath(Node n) {
 		return GroupReplication2.getProtocol(n).deathTime;
 	}
 
-	static int getGroupDeath(Group g) {
+	public static int getGroupDeath(Group g) {
 		ArrayList<Integer> deathTimes = new ArrayList<Integer>();
 		for (Node i : g.getFinger()) {
-			deathTimes.add(getDeathTime(i));
+			deathTimes.add(getNodeDeath(i));
 		}
 		Collections.sort(deathTimes);
 
-		int numToMerge = g.size() - GroupReplication2.minReplication; // if(g.size
-																		// <
-		// minReplication)
+		int numToMerge = g.size() - GroupReplication2.minReplication;
+		// if(g.size < minReplication)
 
 		Iterator<Integer> iter = deathTimes.iterator();
 		int groupDeath = iter.next();
@@ -37,25 +61,74 @@ public class GRUtils {
 		return groupDeath;
 	}
 
-	static List<Pair<Group, Integer>> getGroupDeathList() {
+	public static List<Pair<Group, Integer>> listGroupDeaths(Collection<Group> c) {
 		List<Pair<Group, Integer>> lst = new ArrayList<Pair<Group, Integer>>();
-		for (Group i : Group.groups) {
+		for (Group i : c) {
 			lst.add(new Pair<Group, Integer>(i, getGroupDeath(i)));
 		}
 
-		Collections.sort(lst, new Comparator<Pair<Group, Integer>>() {
-			@Override
-			public int compare(Pair<Group, Integer> o1, Pair<Group, Integer> o2) {
-				return -o2.snd + o1.snd;
-			}
-		});
+		Collections.sort(lst, new ComparePairsSortByLargest<Group>());
 		return lst;
 	}
 
-	static List<Pair<Group, Double>> getGroupAverageLoadList(Collection<Group> c) {
+	private static class ComparePairsSortByLargest<T> implements Comparator<Pair<T, Integer>> {
+		@Override
+		public int compare(Pair<T, Integer> o1, Pair<T, Integer> o2) {
+			return -(o2.snd - o1.snd);
+		}
+	}
+
+	public static Node getMinDeath(Collection<Node> c) {
+		int max = 0;
+		Node n = null;
+		for (Node it : c) {
+			int dt = getNodeDeath(it);
+			if (n == null || dt < max) {
+				max = dt;
+				n = it;
+			}
+		}
+		return n;
+	}
+
+	/**
+	 * Get list of node deaths, sorted by largest (most distant death) to
+	 * smallest.
+	 * 
+	 * @param groups
+	 * @return
+	 */
+	public static List<Pair<Node, Integer>> listNodeDeaths(HashSet<Group> groups) {
+		List<Pair<Node, Integer>> retVal = new ArrayList<Pair<Node, Integer>>();
+		for (Group i : groups) {
+			for (Node j : i.getFinger()) {
+				retVal.add(new Pair<Node, Integer>(j, getNodeDeath(j)));
+			}
+		}
+		Collections.sort(retVal, new ComparePairsSortByLargest<Node>());
+		return retVal;
+	}
+
+	public static boolean isInPercDeathTime(Node n, Collection<Group> c, double percent) {
+		int count = 0;
+		int total = 0;
+		int deathTime = getNodeDeath(n);
+		for (Group it : c) {
+			for (Node j : it.getFinger()) {
+				if (getNodeDeath(j) > deathTime)
+					count++;
+				total++;
+			}
+		}
+		return ((double) count) / total > percent;
+	}
+
+	/***************** LOAD related functions ******************/
+
+	public static List<Pair<Group, Double>> listGroupAverageLoads(Collection<Group> c) {
 		List<Pair<Group, Double>> lst = new ArrayList<Pair<Group, Double>>();
 		for (Group i : c) {
-			lst.add(new Pair<Group, Double>(i, calcAvgLoad(i)));
+			lst.add(new Pair<Group, Double>(i, getAvgGroupLoad(i)));
 		}
 
 		Collections.sort(lst, new Comparator<Pair<Group, Double>>() {
@@ -72,83 +145,12 @@ public class GRUtils {
 		return lst;
 	}
 
-	public static List<Group> getSmallestList() {
-		double smallSize = Integer.MAX_VALUE;
-		List<Group> toReturn = new ArrayList<Group>();
-
-		for (Group it : Group.groups) {
-			if (it.size() < smallSize) {
-				toReturn.clear();
-				toReturn.add(it);
-				smallSize = it.size();
-			} else if (it.size() == smallSize) {
-				toReturn.add(it);
-			}
-		}
-		assert (toReturn.size() > 0) : Group.groups;
-		return toReturn;
-	}
-
-	public static List<Group> getLargestList() {
-		double largeSize = 0;
-		List<Group> toReturn = new ArrayList<Group>();
-
-		for (Group it : Group.groups) {
-			if (it.size() > largeSize) {
-				toReturn.clear();
-				toReturn.add(it);
-				largeSize = it.size();
-			} else if (it.size() == largeSize) {
-				toReturn.add(it);
-			}
-		}
-		assert (toReturn.size() > 0) : Group.groups;
-		return toReturn;
-	}
-
-	static Group getShortestDeath(Collection<Group> lst) {
-		Node node = null;
-		Group group = null;
-		int minTime = 0;
-
-		for (Group g : lst) {
-			for (Node n : g.getFinger()) {
-				if (node == null) {
-					node = n;
-					group = g;
-					minTime = getDeathTime(n);
-				} else if (getDeathTime(n) < minTime) {
-					node = n;
-					group = g;
-					minTime = getDeathTime(n);
-				}
-			}
-		}
-		return group;
-	}
-
-	static Group getShortestGroupDeath(Collection<Group> lst) {
-		Group group = null;
-		int minTime = 0;
-
-		for (Group g : lst) {
-			if (group == null) {
-				group = g;
-				minTime = getGroupDeath(g);
-			} else if (getGroupDeath(g) < minTime) {
-				group = g;
-				minTime = getGroupDeath(g);
-			}
-		}
-		return group;
-	}
-
-	static Group getMostAverageLoaded(Collection<Group> c) {
+	public static Group getMostAverageLoaded(Collection<Group> c) {
 		double maxLoad = 0;
 		Group toReturn = null;
 
 		for (Group it : c) {
-			double load = calcAvgLoad(it);
+			double load = getAvgGroupLoad(it);
 			if (toReturn == null || load > maxLoad) {
 				maxLoad = load;
 				toReturn = it;
@@ -157,15 +159,11 @@ public class GRUtils {
 		return toReturn;
 	}
 
-	public static double calcAvgLoad(Group g) {
-		return ((double) g.load()) / g.size();
-	}
-
-	public static Group getMostLoaded(List<Group> smallestList) {
+	public static Group getMostLoaded(Collection<Group> smallestList) {
 		double maxLoad = 0;
 		Group toReturn = null;
 
-		for (Group it : getSmallestList()) {
+		for (Group it : smallestList) {
 			double load = it.load();
 			if (load > maxLoad) {
 				maxLoad = load;
@@ -175,23 +173,47 @@ public class GRUtils {
 		return toReturn;
 	}
 
-	public static <X, Y> Collection<X> slicePercentage(Collection<Pair<X, Y>> c, double perc) {
-		List<X> retVal = new ArrayList<X>();
-		if (c.size() < 3) {
-			for (Pair<X, Y> i : c) {
-				retVal.add(i.fst);
-			}
-			return retVal;
-		}
-
-		int initialSize = c.size();
-		for (Pair<X, Y> i : c) {
-			if (retVal.size() > (initialSize * perc))
-				break;
-			retVal.add(i.fst);
-		}
-		return retVal;
+	public static double getAvgGroupLoad(Group g) {
+		return ((double) g.load()) / g.size();
 	}
+
+	/***************** SIZE related functions ******************/
+	
+	public static List<Group> listSmallest(Collection<Group> c) {
+		double smallSize = Integer.MAX_VALUE;
+		List<Group> toReturn = new ArrayList<Group>();
+
+		for (Group it : c) {
+			if (it.size() < smallSize) {
+				toReturn.clear();
+				toReturn.add(it);
+				smallSize = it.size();
+			} else if (it.size() == smallSize) {
+				toReturn.add(it);
+			}
+		}
+		assert (toReturn.size() > 0) : c;
+		return toReturn;
+	}
+
+	public static List<Group> listLargest(Collection<Group> c) {
+		double largeSize = 0;
+		List<Group> toReturn = new ArrayList<Group>();
+
+		for (Group it : c) {
+			if (it.size() > largeSize) {
+				toReturn.clear();
+				toReturn.add(it);
+				largeSize = it.size();
+			} else if (it.size() == largeSize) {
+				toReturn.add(it);
+			}
+		}
+		assert (toReturn.size() > 0) : c;
+		return toReturn;
+	}
+
+	/***************** KEYS related functions ******************/
 
 	public static Group getMostKeys(Collection<Group> c) {
 		Group maxGrp = null;
@@ -211,30 +233,68 @@ public class GRUtils {
 		return minGrp;
 	}
 
-	public static boolean isAboveAverage(GroupReplication2 n, HashSet<Group> groups, double percent) {
-		int count = 0;
-		int total = 0;
-		int deathTime = n.deathTime;
+	/**
+	 * get a list of groups, sorted by descending number of keys.
+	 * @param groups
+	 * @return
+	 */
+	public static List<Pair<Group, Integer>> listGroupKeys(Collection<Group> groups) {
+		List<Pair<Group, Integer>> retVal = new ArrayList<Pair<Group, Integer>>();
 		for (Group it : groups) {
-			for (Node j : it.getFinger()) {
-				if (getDeathTime(j) > deathTime)
-					count++;
-				total++;
-			}
+			retVal.add(new Pair<Group, Integer>(it, it.keys));
 		}
-		return ((double) count) / total > percent;
+		Collections.sort(retVal, new ComparePairsSortByLargest<Group>());
+		return retVal;
 	}
 
-	public static Node getMinDeathTime(Collection<Node> c) {
-		int max = 0;
-		Node n = null;
-		for (Node it : c) {
-			int dt = getDeathTime(it);
-			if (n == null || dt < max) {
-				max = dt;
-				n = it;
+	/************************ MISC functions ****************************/
+
+	/**
+	 * slice a list, considering only the first percentage of items
+	 * @param c
+	 * @param perc
+	 * @return
+	 */
+	public static <X, Y> Collection<X> slicePercentage(Collection<Pair<X, Y>> c, double perc) {
+		List<X> retVal = new ArrayList<X>();
+		if (c.size() < 3) {
+			for (Pair<X, Y> i : c) {
+				retVal.add(i.fst);
 			}
+			return retVal;
 		}
-		return n;
+
+		int initialSize = c.size();
+		for (Pair<X, Y> i : c) {
+			if (retVal.size() > (initialSize * perc))
+				break;
+			retVal.add(i.fst);
+		}
+		return retVal;
+	}
+	
+	/**
+	 * slice a list, considering everything but the first percentage of items
+	 * @param c
+	 * @param perc
+	 * @return
+	 */
+	public static <X, Y> Collection<X> sliceInversePercentage(Collection<Pair<X, Y>> c, double perc) {
+		List<X> retVal = new ArrayList<X>();
+		if (c.size() < 3) {
+			for (Pair<X, Y> i : c) {
+				retVal.add(i.fst);
+			}
+			return retVal;
+		}
+
+		int initialSize = c.size();
+		int count = 0;
+		for (Pair<X, Y> i : c) {
+			if(count++ <= (initialSize * perc))
+				continue;
+			retVal.add(i.fst);
+		}
+		return retVal;
 	}
 }
