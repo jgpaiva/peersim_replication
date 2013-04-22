@@ -71,6 +71,7 @@ public class Queries2 extends ControlImpl {
 		int[] nodeLoads = new int[Network.size()];
 		int counter = 0;
 
+		this.println("Current time: " + this.getStep());
 		if (Network.get(0).getProtocol(this.pid) instanceof GroupReplication2) {
 			HashSet<TreeSet<Node>> groups = GroupReplication2.getGroups();
 			for (TreeSet<Node> group : groups) {

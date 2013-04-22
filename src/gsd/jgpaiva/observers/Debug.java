@@ -27,6 +27,10 @@ public class Debug implements Control {
 	private static Debug instance = null;
 
 	public static Debug getInstance() {
+		if(instance == null) {
+			System.err.println("oops, returning null debug instance");
+			Thread.dumpStack();
+		}
 		return Debug.instance;
 	}
 
@@ -37,7 +41,7 @@ public class Debug implements Control {
 			this.finalStep = Configuration.getInt(prefix + "."
 					+ Debug.PAR_FINAL_STEP);
 		} else {
-			this.finalStep = -1;
+			this.finalStep = 0;
 		}
 
 		this.nodes = new ArrayList<Long>();
@@ -76,58 +80,43 @@ public class Debug implements Control {
 
 	@Override
 	public boolean execute() {
-		if (this.nodes.size() == 0) return false;
-
 		this.currentStep++;
-		if (this.currentStep < this.initStep) return false;
-		if (!this.active) {
-			this.active = true;
-		}
+		if (this.currentStep < this.initStep)
+			return false;
 
-		if (this.finalStep > 0 && this.currentStep > this.finalStep) {
+		if (this.finalStep >= 0 && this.currentStep >= this.finalStep) {
 			if (this.active) {
 				this.active = false;
+				System.err.println(this.currentStep + ": Deactivating debug");
 			}
 			return false;
+		}
+		
+		if (!this.active) {
+			System.err.println(this.currentStep + ": Activating debug");
+			this.active = true;
 		}
 
 		return false;
 	}
 
-//	public void debug(Scatter proto, String s) {
-//		if (!this.active) return;
-//		Node node = proto.getNode();
-//		if (node != null) {
-//			int nodeIndex = this.nodes.indexOf(node.getID());
-//			if (nodeIndex < 0)
-//				throw new RuntimeException("Should never happen");
-//
-//			String clusterID = proto.getID() != null ? proto.getID().toString(
-//					Character.MAX_RADIX) : "null";
-//			PrintStream ps = this.psList.get(nodeIndex);
-//			ps.println(CommonState.getTime() + " " + node.getID() + " "
-//					+ proto.getName() + " " + clusterID + " " + s);
-//		}
-//	}
-//
-//	public void debug(Rollerchain proto, String s) {
-//		if (!this.active) return;
-//		Node node = proto.getNode();
-//		if (node != null) {
-//			int nodeIndex = this.nodes.indexOf(node.getID());
-//			if (nodeIndex < 0)
-//				throw new RuntimeException("Should never happen");
-//
-//			String clusterID = proto.getID() != null ? proto.getID().toString(
-//					Character.MAX_RADIX) : "null";
-//			PrintStream ps = this.psList.get(nodeIndex);
-//			ps.println(CommonState.getTime() + " " + node.getID() + " "
-//					+ proto.getName() + " " + clusterID + " " + s);
-//		}
-//	}
+	public static void debug(Object caller, String s) {
+		if(getInstance() == null)
+			return;
+		getInstance().debugAll(caller, s);
+	}
+	
+	public void debugAll(Object caller, String s) {
+		if (!this.active)
+			return;
 
-	public void debug(ProtocolStub proto, String s) {
-		if (!this.active) return;
+		System.err.println(CommonState.getTime() + " DEBUG " + caller + " " + s);
+	}
+
+	public void debugProto(ProtocolStub proto, String s) {
+		if (!this.active)
+			return;
+
 		Node node = proto.getNode();
 		if (node != null) {
 			int nodeIndex = this.nodes.indexOf(node.getID());

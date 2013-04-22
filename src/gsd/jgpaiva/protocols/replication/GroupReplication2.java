@@ -6,6 +6,7 @@ import gsd.jgpaiva.interfaces.GroupSizeObservable;
 import gsd.jgpaiva.interfaces.KeyStorageProtocol;
 import gsd.jgpaiva.interfaces.MonitorableProtocol;
 import gsd.jgpaiva.interfaces.UptimeSimulatorProtocol;
+import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.protocols.ProtocolStub;
 import gsd.jgpaiva.utils.GlobalConfig;
 import gsd.jgpaiva.utils.KeyCreator;
@@ -173,8 +174,8 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 		else if (mode == Mode.SMALLEST_PREEMPTIVE)
 			GroupReplication2.joiner = new JoinSmallestPreemptive();
 
-		if (mode == Mode.LNLB || mode == Mode.RANDOM3 || mode == Mode.LNLB_SMALLEST
-				|| mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
+		if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode == Mode.RANDOM3
+				|| mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
 				|| mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE) {
 			Group.keyRangeBreaker = Group.LoadSpliter.instance;
 		} else {
@@ -228,6 +229,8 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 			assert toJoin != null : Group.groups;
 			toJoin.joinNode(this.getNode());
 			toJoin.updateMembers();
+
+			Debug.debug(this, " joined at " + toJoin);
 
 			if (this.myGroup.size() > GroupReplication2.maxReplication) {
 				this.myGroup.divide();
@@ -285,25 +288,25 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 		public Group getGroupToJoin(GroupReplication2 n) {
 			boolean isAboveAvg = GRUtils.isInPercDeathTime(n.getNode(), Group.groups, aboveAvg);
 
+			List<Group> lst1 = GRUtils.listAboveAverage(GRUtils.listGroupAverageLoads(Group.groups));
 			if (keysBeforeLoad) {
 				if (isAboveAvg) {
-					Collection<Group> toSelect = GRUtils.slicePercentage(GRUtils.listGroupKeys(Group.groups),
-							slice);
+					Collection<Group> toSelect = GRUtils.slicePercentage(GRUtils.listGroupKeys(lst1), slice);
 					return GRUtils.getMostAverageLoaded(toSelect);
 				} else {
 					Collection<Group> toSelect = GRUtils.sliceInversePercentage(
-							GRUtils.listGroupKeys(Group.groups), slice);
+							GRUtils.listGroupKeys(lst1), slice);
 					return GRUtils.getMostAverageLoaded(toSelect);
 				}
 			} else {
 				if (isAboveAvg) {
 					Collection<Group> toSelect = GRUtils.slicePercentage(
-							GRUtils.listGroupAverageLoads(Group.groups),
+							GRUtils.listGroupAverageLoads(lst1),
 							slice);
 					return GRUtils.getMostKeys(toSelect);
 				} else {
 					Collection<Group> toSelect = GRUtils.sliceInversePercentage(
-							GRUtils.listGroupAverageLoads(Group.groups),
+							GRUtils.listGroupAverageLoads(lst1),
 							slice);
 					return GRUtils.getMostKeys(toSelect);
 				}
@@ -356,6 +359,8 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	}
 
 	public void killed(Collection<Pair<Node, Integer>> availabilityList) {
+		Debug.debug(this, " was killed");
+
 		Group tempGroup = this.myGroup;
 		this.myGroup.removeNode(this.getNode());
 
@@ -425,7 +430,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 	@Override
 	public String toString() {
-		return this.myGroup + " " + this.isUp();
+		return this.getNode() + " " + this.myGroup + " " + this.isUp();
 	}
 
 	public void setGroup(Group group) {

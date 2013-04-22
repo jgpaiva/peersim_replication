@@ -15,9 +15,9 @@ import java.util.Map;
 import peersim.core.Node;
 
 public class GRUtils {
-	
+
 	/***************** DEATH TIME related functions ******************/
-	
+
 	public static Group getNextGroupDeath(Collection<Group> lst) {
 		Node node = null;
 		Group group = null;
@@ -178,7 +178,7 @@ public class GRUtils {
 	}
 
 	/***************** SIZE related functions ******************/
-	
+
 	public static List<Group> listSmallest(Collection<Group> c) {
 		double smallSize = Integer.MAX_VALUE;
 		List<Group> toReturn = new ArrayList<Group>();
@@ -235,6 +235,7 @@ public class GRUtils {
 
 	/**
 	 * get a list of groups, sorted by descending number of keys.
+	 * 
 	 * @param groups
 	 * @return
 	 */
@@ -251,6 +252,7 @@ public class GRUtils {
 
 	/**
 	 * slice a list, considering only the first percentage of items
+	 * 
 	 * @param c
 	 * @param perc
 	 * @return
@@ -272,9 +274,10 @@ public class GRUtils {
 		}
 		return retVal;
 	}
-	
+
 	/**
 	 * slice a list, considering everything but the first percentage of items
+	 * 
 	 * @param c
 	 * @param perc
 	 * @return
@@ -291,9 +294,30 @@ public class GRUtils {
 		int initialSize = c.size();
 		int count = 0;
 		for (Pair<X, Y> i : c) {
-			if(count++ <= (initialSize * perc))
+			if (count++ <= (initialSize * perc))
 				continue;
 			retVal.add(i.fst);
+		}
+		return retVal;
+	}
+
+	/**
+	 * remove items from list which are bellow the average
+	 * 
+	 * @param c
+	 * @param perc
+	 * @return
+	 */
+	public static <T> List<T> listAboveAverage(List<Pair<T, Double>> list) {
+		double total = 0;
+		for (Pair<T, Double> it : list) {
+			total += it.snd;
+		}
+		double avg = total / list.size();
+		List<T> retVal = new ArrayList<T>();
+		for (Pair<T, Double> it : list) {
+			if (it.snd >= avg)
+				retVal.add(it.fst);
 		}
 		return retVal;
 	}

@@ -1,5 +1,6 @@
 package gsd.jgpaiva.protocols.replication;
 
+import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.protocols.ProtocolStub;
 import gsd.jgpaiva.protocols.replication.GroupReplication2.Mode;
 import gsd.jgpaiva.structures.dht.FingerGroup;
@@ -86,17 +87,23 @@ public class Group {
 	}
 
 	public void merge() {
-		mergeTo(mergeP.getGroup(this));
+		Group mergeTo = mergeP.getGroup(this);
+		Debug.debug(this, " will merge to:" + mergeTo);
+		Group res = mergeTo(mergeTo);
+		Debug.debug(this, " merged into: " + res + "\nDEBUG groups: " + groups);
 	}
 
 	public void divide() {
-		divideTo(divideP.getGroup(this));
+		Group divideTo = divideP.getGroup(this);
+		Debug.debug(this, " will divide to:" + divideTo);
+		Group res = divideTo(divideTo);
+		Debug.debug(this, " divided and created: " + res + "\nDEBUG groups: " + groups);
 	}
 
-	private void mergeTo(Group mergeTo) {
+	private Group mergeTo(Group mergeTo) {
 		GroupReplication2.checkIntegrity();
 		if (Group.groups.size() == 1)
-			return;
+			return null;
 		assert (this.successor != null);
 		Group.mergesCount++;
 
@@ -104,6 +111,7 @@ public class Group {
 		mergeNodesTo(mergeTo);
 
 		GroupReplication2.checkIntegrity();
+		return mergeTo;
 	}
 
 	private void mergeKeysTo(Group mergeTo) {
@@ -137,7 +145,7 @@ public class Group {
 		}
 	}
 
-	private void divideTo(Group divideTo) {
+	private Group divideTo(Group divideTo) {
 		Group.divisionsCount++;
 		if (divideTo == null)
 			divideTo = this;
@@ -145,6 +153,7 @@ public class Group {
 		Group newGroup = splitIntoNewGroup();
 		divideTo.moveKeysTo(newGroup);
 		divideTo.setAsPredecessor(newGroup);
+		return newGroup;
 	}
 
 	private Group splitIntoNewGroup() {
@@ -157,9 +166,12 @@ public class Group {
 				this.finger.size();
 		assert (oldSize >= 0) : oldSize + " " + newSize;
 
-		if (GroupReplication2.mode == Mode.LNLB_PREEMPTIVE ) {//|| GroupReplication2.mode == Mode.LNLB) {
+		if (GroupReplication2.mode == Mode.LNLB_PREEMPTIVE) {// ||
+																// GroupReplication2.mode
+																// == Mode.LNLB)
+																// {
 			while (this.finger.size() > oldSize) {
-				Node n = GRUtils.getMinDeath(this.finger);	
+				Node n = GRUtils.getMinDeath(this.finger);
 				this.finger.remove(n);
 				setNew.add(n);
 			}
@@ -240,7 +252,7 @@ public class Group {
 			int newKeys = (int) (GroupReplication2.unevenLoad ? Math.ceil(group.keys) * 0.10 : group.load);
 			return new Pair<Integer, Integer>(newKeys, newLoad);
 		}
-		
+
 		static LoadSpliter instance = new LoadSpliter();
 	}
 
@@ -253,7 +265,7 @@ public class Group {
 		public Group getGroup(Group g) {
 			return g.successor;
 		}
-		
+
 		static SuccessorPicker instance = new SuccessorPicker();
 	}
 
@@ -265,13 +277,14 @@ public class Group {
 			Group mostLoaded = null;
 			for (Group i : Group.groups) {
 				if (i != g) {
-					if (mostLoaded == null || GRUtils.getAvgGroupLoad(i) > GRUtils.getAvgGroupLoad(mostLoaded))
+					if (mostLoaded == null
+							|| GRUtils.getAvgGroupLoad(i) > GRUtils.getAvgGroupLoad(mostLoaded))
 						mostLoaded = i;
 				}
 			}
 			return mostLoaded;
 		}
-		
+
 		static LoadedPicker instance = new LoadedPicker();
 	}
 
@@ -289,7 +302,7 @@ public class Group {
 			}
 			return largest;
 		}
-		
+
 		static LargestPicker instance = new LargestPicker();
 	}
 
@@ -298,7 +311,7 @@ public class Group {
 		public Group getGroup(Group g) {
 			return g;
 		}
-		
+
 		static ThisPicker instance = new ThisPicker();
 	}
 
@@ -307,7 +320,7 @@ public class Group {
 		public Group getGroup(Group g) {
 			return Utils.getRandomEl(Group.groups);
 		}
-		
+
 		static RandomPicker instance = new RandomPicker();
 	}
 
@@ -322,7 +335,7 @@ public class Group {
 			} while (toMerge == g);
 			return toMerge;
 		}
-		
+
 		static RandomNotThisPicker instance = new RandomNotThisPicker();
 	}
 
@@ -412,6 +425,6 @@ public class Group {
 
 	@Override
 	public String toString() {
-		return this.keys + "" + this.finger + "";
+		return "L:" + this.load + "K:" + this.keys + "" + this.finger + "";
 	}
 }
