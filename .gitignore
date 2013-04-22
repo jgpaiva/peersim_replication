@@ -7,3 +7,6 @@ bin
 .settings
 configs/runs
 configs/lnlb_preemptive
+configs/libs
+*.jar
+configs/arguments
