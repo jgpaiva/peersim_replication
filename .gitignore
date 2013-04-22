@@ -6,7 +6,8 @@ bin
 .project
 .settings
 configs/runs
-configs/lnlb_preemptive
+configs/gen
 configs/libs
 *.jar
 configs/arguments
+*.out
