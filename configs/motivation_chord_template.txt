@@ -81,6 +81,7 @@ control.queries.step 1
 control.queries.initstep ENDTIME+10
 control.queries.finalstep ENDTIME+10
 control.queries.repeats 10
+control.queries.numvservers 100
 ################ Alignment ================================
 
 include.protocol r
