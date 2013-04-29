@@ -18,6 +18,7 @@ for i in `cat $FILENAME`
 do
     TORUN=`echo "$i" | sed 's:.*/::'`
 
+    date
     ./all_wait.sh $i runs/$TORUN &
 
     let COUNTER=COUNTER+1

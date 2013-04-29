@@ -1,5 +1,5 @@
 # network size
-SIZE 100000
+SIZE 256000
 KEYS 100000
 
 #SIZE 500
@@ -34,7 +34,7 @@ simulation.logtime CYCLE
 global.idLength 128
 global.replication 0
 
-protocol.r gsd.jgpaiva.protocols.replication.GroupReplication2
+protocol.r gsd.jgpaiva.protocols.replication.GroupReplication
 protocol.r.step CYCLE
 protocol.r.minrepl 3
 protocol.r.maxrepl 9
@@ -63,7 +63,7 @@ keyCreator.nkeys KEYS
 keyCreator.initmode random
 
 control.resort gsd.jgpaiva.controllers.ResortNetwork
-control.resort.mintime 26470
+control.resort.resorttime 26470
 control.resort.finalstep ENDTIME
 control.resort.protocol r
 control.resort.step 1
@@ -111,7 +111,15 @@ control.queries.initstep ENDTIME+10
 control.queries.finalstep ENDTIME+10
 control.queries.repeats 10
 
-control.queries2 gsd.jgpaiva.observers.replication.Queries2
+control.queriescheck gsd.jgpaiva.observers.replication.Queries
+control.queriescheck.protocol r
+control.queriescheck.step 1
+control.queriescheck.initstep 26470
+control.queriescheck.finalstep ENDTIME+10
+control.queriescheck.repeats 1
+control.queriescheck.doevery 1000
+
+control.queries2 gsd.jgpaiva.observers.replication.Queries
 control.queries2.protocol r
 control.queries2.step 1
 control.queries2.initstep ENDTIME+10
@@ -122,4 +130,4 @@ control.queries2.repeats 10
 
 include.protocol r
 
-include.control memb debug messagecost keys gsize roundstats queries monitor queries2 resort
+include.control memb debug messagecost keys gsize roundstats queries monitor queries2 resort queriescheck
