@@ -4,6 +4,7 @@ import gsd.jgpaiva.interfaces.ChainReplProtocol;
 import gsd.jgpaiva.interfaces.CostAwareMessage;
 import gsd.jgpaiva.interfaces.GroupSizeObservable;
 import gsd.jgpaiva.interfaces.KeyStorageProtocol;
+import gsd.jgpaiva.interfaces.LoadAwareProtocol;
 import gsd.jgpaiva.interfaces.MonitorableProtocol;
 import gsd.jgpaiva.interfaces.UptimeSimulatorProtocol;
 import gsd.jgpaiva.observers.Debug;
@@ -24,8 +25,8 @@ import peersim.core.Fallible;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeSimulatorProtocol,
-		KeyStorageProtocol, GroupSizeObservable, MonitorableProtocol, ChainReplProtocol {
+public class GroupReplication extends ProtocolStub implements Protocol, UptimeSimulatorProtocol,
+		KeyStorageProtocol, GroupSizeObservable, MonitorableProtocol, ChainReplProtocol, LoadAwareProtocol {
 	public enum Mode {
 		// policies
 		SCATTER,
@@ -80,18 +81,18 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	// private FingerGroup predecessor;
 	// private int keys = 0;
 
-	public GroupReplication2(String prefix) {
+	public GroupReplication(String prefix) {
 		super(prefix);
-		GroupReplication2.idLength = GlobalConfig.getIdLength();
-		GroupReplication2.ringSize = BigInteger.ONE.add(BigInteger.ONE).pow(
-				GroupReplication2.idLength);
-		GroupReplication2.minReplication = Configuration.getInt(prefix + '.'
-				+ GroupReplication2.PAR_MIN_REPL);
-		GroupReplication2.maxReplication = Configuration.getInt(prefix + '.'
-				+ GroupReplication2.PAR_MAX_REPL);
-		GroupReplication2.unevenLoad = Configuration.getBoolean(prefix + '.'
-				+ GroupReplication2.PAR_UNEVEN_LOAD);
-		String modeString = Configuration.getString(prefix + '.' + GroupReplication2.MODE);
+		GroupReplication.idLength = GlobalConfig.getIdLength();
+		GroupReplication.ringSize = BigInteger.ONE.add(BigInteger.ONE).pow(
+				GroupReplication.idLength);
+		GroupReplication.minReplication = Configuration.getInt(prefix + '.'
+				+ GroupReplication.PAR_MIN_REPL);
+		GroupReplication.maxReplication = Configuration.getInt(prefix + '.'
+				+ GroupReplication.PAR_MAX_REPL);
+		GroupReplication.unevenLoad = Configuration.getBoolean(prefix + '.'
+				+ GroupReplication.PAR_UNEVEN_LOAD);
+		String modeString = Configuration.getString(prefix + '.' + GroupReplication.MODE);
 
 		if (modeString.equals("scatter"))
 			mode = Mode.SCATTER;
@@ -101,7 +102,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 			mode = Mode.LNLB;
 		else if (modeString.equals("lnlb_supersize")) {
 			mode = Mode.LNLB_SUPERSIZE;
-			GroupReplication2.maxReplication *= 2;
+			GroupReplication.maxReplication *= 2;
 		} else if (modeString.equals("lnlb_preemptive"))
 			mode = Mode.LNLB_PREEMPTIVE;
 		else if (modeString.equals("lnlb_rebalance"))
@@ -118,7 +119,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 			mode = Mode.PREEMPTIVE_GROUP;
 		else if (modeString.equals("supersize")) {
 			mode = Mode.SUPERSIZE;
-			GroupReplication2.maxReplication *= 2;
+			GroupReplication.maxReplication *= 2;
 		} else if (modeString.equals("surplus"))
 			mode = Mode.SURPLUS;
 		else if (modeString.equals("random"))
@@ -142,37 +143,37 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 		System.err.println("Working in " + mode + " mode");
 
 		if (mode == Mode.LNLB_PREEMPTIVE) {
-			GroupReplication2.slice = Configuration.getDouble(name + '.'
-					+ GroupReplication2.PAR_SLICE);
-			GroupReplication2.aboveAvg = Configuration.getDouble(name + '.'
-					+ GroupReplication2.PAR_ABOVEAVG);
-			GroupReplication2.keysBeforeLoad = Configuration.getBoolean(name + '.'
-					+ GroupReplication2.PAR_KEYS_BEFORE_LOAD);
+			GroupReplication.slice = Configuration.getDouble(name + '.'
+					+ GroupReplication.PAR_SLICE);
+			GroupReplication.aboveAvg = Configuration.getDouble(name + '.'
+					+ GroupReplication.PAR_ABOVEAVG);
+			GroupReplication.keysBeforeLoad = Configuration.getBoolean(name + '.'
+					+ GroupReplication.PAR_KEYS_BEFORE_LOAD);
 			System.err.println("Slice at:" + slice + " Above average at:" + aboveAvg + " Keys before load? "
 					+ keysBeforeLoad);
 		}
 
 		if (mode == Mode.LNLB || mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE
 				|| mode == Mode.LNLB_MERGE || mode == Mode.LNLB_REBALANCE)
-			GroupReplication2.joiner = new JoinAverageMostLoaded();
+			GroupReplication.joiner = new JoinAverageMostLoaded();
 		if (mode == Mode.LNLB_PREEMPTIVE)
-			GroupReplication2.joiner = new JoinPreemptiveAverageMostLoaded();
+			GroupReplication.joiner = new JoinPreemptiveAverageMostLoaded();
 		else if (mode == Mode.LNLB_SMALLEST)
-			GroupReplication2.joiner = new JoinSmallestAverageMostLoaded();
+			GroupReplication.joiner = new JoinSmallestAverageMostLoaded();
 		else if (mode == Mode.SCATTER || mode == Mode.SCATTER_NOREBALANCE)
-			GroupReplication2.joiner = new JoinScatter();
+			GroupReplication.joiner = new JoinScatter();
 		else if (mode == Mode.PREEMPTIVE)
-			GroupReplication2.joiner = new JoinPreemtive();
+			GroupReplication.joiner = new JoinPreemtive();
 		else if (mode == Mode.PREEMPTIVE_GROUP)
-			GroupReplication2.joiner = new JoinPreemtiveGroup();
+			GroupReplication.joiner = new JoinPreemtiveGroup();
 		else if (mode == Mode.SUPERSIZE)
-			GroupReplication2.joiner = new JoinSmallest();
+			GroupReplication.joiner = new JoinSmallest();
 		else if (mode == Mode.SURPLUS)
-			GroupReplication2.joiner = new JoinLargest();
+			GroupReplication.joiner = new JoinLargest();
 		else if (mode == Mode.RANDOM || mode == Mode.RANDOM2 || mode == Mode.RANDOM3)
-			GroupReplication2.joiner = new JoinRandom();
+			GroupReplication.joiner = new JoinRandom();
 		else if (mode == Mode.SMALLEST_PREEMPTIVE)
-			GroupReplication2.joiner = new JoinSmallestPreemptive();
+			GroupReplication.joiner = new JoinSmallestPreemptive();
 
 		if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode == Mode.RANDOM3
 				|| mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
@@ -202,9 +203,9 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	}
 
 	@Override
-	public GroupReplication2 clone() {
-		GroupReplication2 c = (GroupReplication2) super.clone();
-		c = (GroupReplication2) super.clone();
+	public GroupReplication clone() {
+		GroupReplication c = (GroupReplication) super.clone();
+		c = (GroupReplication) super.clone();
 		return c;
 	}
 
@@ -213,8 +214,8 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 		return true;
 	}
 
-	static GroupReplication2 getProtocol(Node node) {
-		GroupReplication2 val = (GroupReplication2) node.getProtocol(ProtocolStub.pid);
+	static GroupReplication getProtocol(Node node) {
+		GroupReplication val = (GroupReplication) node.getProtocol(ProtocolStub.pid);
 		return val;
 	}
 
@@ -232,7 +233,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 			Debug.debug(this, " joined at " + toJoin);
 
-			if (this.myGroup.size() > GroupReplication2.maxReplication) {
+			if (this.myGroup.size() > GroupReplication.maxReplication) {
 				this.myGroup.divide();
 			}
 		}
@@ -259,33 +260,33 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	}
 
 	interface Joiner {
-		Group getGroupToJoin(GroupReplication2 n);
+		Group getGroupToJoin(GroupReplication n);
 	}
 
 	class JoinAverageMostLoaded implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return GRUtils.getMostAverageLoaded(Group.groups);
 		}
 	}
 
 	class JoinScatter implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return GRUtils.getMostLoaded(GRUtils.listSmallest(Group.groups));
 		}
 	}
 
 	class JoinSmallestAverageMostLoaded implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return GRUtils.getMostAverageLoaded(Group.groups);
 		}
 	}
 
 	class JoinPreemptiveAverageMostLoaded implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			boolean isAboveAvg = GRUtils.isInPercDeathTime(n.getNode(), Group.groups, aboveAvg);
 
 			List<Group> lst1 = GRUtils.listAboveAverage(GRUtils.listGroupAverageLoads(Group.groups));
@@ -316,7 +317,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 	class JoinPreemtiveGroup implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			List<Pair<Group, Integer>> lst = GRUtils.listGroupDeaths(Group.groups);
 			Collection<Group> lst2 = GRUtils.slicePercentage(lst, 0.5);
 			return GRUtils.getMostAverageLoaded(lst2);
@@ -325,35 +326,35 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 	class JoinPreemtive implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return GRUtils.getNextGroupDeath(Group.groups);
 		}
 	}
 
 	class JoinRandom implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return Utils.getRandomEl(Group.groups);
 		}
 	}
 
 	class JoinSmallestPreemptive implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return GRUtils.getNextGroupDeath(GRUtils.listSmallest(Group.groups));
 		}
 	}
 
 	class JoinSmallest implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return Utils.getRandomEl(GRUtils.listSmallest(Group.groups));
 		}
 	}
 
 	class JoinLargest implements Joiner {
 		@Override
-		public Group getGroupToJoin(GroupReplication2 n) {
+		public Group getGroupToJoin(GroupReplication n) {
 			return Utils.getRandomEl(GRUtils.listLargest(Group.groups));
 		}
 	}
@@ -393,21 +394,21 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	@Override
 	public void startup(Node myNode, Collection<Pair<Node, Integer>> availabilityList,
 			int myDeathTime, int currentTime) {
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 		assert (myNode.getFailState() == Fallible.DOWN);
 		myNode.setFailState(Fallible.OK);
 		this.deathTime = myDeathTime;
 		this.triggerJoin(myNode, myNode);
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 	}
 
 	@Override
 	public void kill(Collection<Pair<Node, Integer>> availabilityList) {
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 		assert (this.getNode().getFailState() == Fallible.OK);
 		this.killed(availabilityList);
 		this.getNode().setFailState(Fallible.DOWN);
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 	}
 
 	static final class KeyTransferMessage implements CostAwareMessage {
@@ -425,7 +426,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 	@Override
 	public void startSim(Node myNode) {
-		GroupReplication2.simStarted = true;
+		GroupReplication.simStarted = true;
 	}
 
 	@Override
@@ -438,7 +439,7 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 	}
 
 	public void sendMessage(KeyTransferMessage keyTransferMessage) {
-		if (GroupReplication2.simStarted) {
+		if (GroupReplication.simStarted) {
 			this.addCost(keyTransferMessage);
 		}
 	}
@@ -459,12 +460,12 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 
 	@Override
 	public int getMaxGroupSize() {
-		return GroupReplication2.maxReplication;
+		return GroupReplication.maxReplication;
 	}
 
 	@Override
 	public int getMinGroupSize() {
-		return GroupReplication2.minReplication;
+		return GroupReplication.minReplication;
 	}
 
 	public static int getRoundMerges() {
@@ -501,8 +502,8 @@ public class GroupReplication2 extends ProtocolStub implements Protocol, UptimeS
 		for (Group it : Group.groups) {
 			keysSum += it.keys();
 		}
-		assert (Group.groups.size() == 0 || keysSum == GroupReplication2.keyCreator.getNKeys()) : keysSum
-				+ " " + GroupReplication2.keyCreator.getNKeys();
+		assert (Group.groups.size() == 0 || keysSum == GroupReplication.keyCreator.getNKeys()) : keysSum
+				+ " " + GroupReplication.keyCreator.getNKeys();
 		return true;
 	}
 

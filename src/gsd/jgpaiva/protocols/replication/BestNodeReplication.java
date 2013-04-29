@@ -35,9 +35,8 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class BestNodeReplication2 extends ProtocolStub implements Protocol, UptimeSimulatorProtocol,
+public class BestNodeReplication extends ProtocolStub implements Protocol, UptimeSimulatorProtocol,
 		KeyStorageProtocol, MonitorableProtocol, ChainReplProtocol {
-	private static final String PAR_REPL = "replication";
 	private static final String PAR_WINDOW = "window";
 	private static final String PAR_KEEP_AT_SUCCESSOR = "keepatsuccessor";
 	private static final String PAR_USE_BEST_NODES = "usebestnodes";
@@ -45,7 +44,6 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 
 	private static int idLength;
 	private static int window;
-	private static BigInteger ringSize;
 	private static final KeyCreator keyCreator = KeyCreator.getInstance(true);
 	private static int replication;
 	private static boolean keepAtSuccessorWindow;
@@ -61,34 +59,31 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 	private Finger successor;
 	private Finger predecessor;
 	private Integer deathTime;
-	private int chainMessageCounter = 0;
 
-	public BestNodeReplication2(String prefix) {
+	public BestNodeReplication(String prefix) {
 		super(prefix);
-		BestNodeReplication2.idLength = GlobalConfig.getIdLength();
-		BestNodeReplication2.ringSize = BigInteger.ONE.add(BigInteger.ONE).pow(
-				BestNodeReplication2.idLength);
-		BestNodeReplication2.replication = GlobalConfig.getReplication();
-		BestNodeReplication2.window = Configuration.getInt(ProtocolStub.name + "."
-				+ BestNodeReplication2.PAR_WINDOW);
-		BestNodeReplication2.keepAtSuccessorWindow = Configuration.getBoolean(ProtocolStub.name
-				+ "." + BestNodeReplication2.PAR_KEEP_AT_SUCCESSOR);
-		BestNodeReplication2.useBestNodes = Configuration.getBoolean(ProtocolStub.name + "."
-				+ BestNodeReplication2.PAR_USE_BEST_NODES);
-		if (Configuration.contains(prefix + "." + BestNodeReplication2.PAR_ERROR)) {
-			BestNodeReplication2.error = Configuration.getDouble(prefix + "."
-					+ BestNodeReplication2.PAR_ERROR);
+		BestNodeReplication.idLength = GlobalConfig.getIdLength();
+		BestNodeReplication.replication = GlobalConfig.getReplication();
+		BestNodeReplication.window = Configuration.getInt(ProtocolStub.name + "."
+				+ BestNodeReplication.PAR_WINDOW);
+		BestNodeReplication.keepAtSuccessorWindow = Configuration.getBoolean(ProtocolStub.name
+				+ "." + BestNodeReplication.PAR_KEEP_AT_SUCCESSOR);
+		BestNodeReplication.useBestNodes = Configuration.getBoolean(ProtocolStub.name + "."
+				+ BestNodeReplication.PAR_USE_BEST_NODES);
+		if (Configuration.contains(prefix + "." + BestNodeReplication.PAR_ERROR)) {
+			BestNodeReplication.error = Configuration.getDouble(prefix + "."
+					+ BestNodeReplication.PAR_ERROR);
 		} else {
-			BestNodeReplication2.error = 0;
+			BestNodeReplication.error = 0;
 		}
 		this.myKeys = new MyStore<ComplexKey>();
 		this.myReplicatedKeys = new MyStore<ComplexKey>();
 	}
 
 	@Override
-	public BestNodeReplication2 clone() {
-		BestNodeReplication2 c = (BestNodeReplication2) super.clone();
-		c = (BestNodeReplication2) super.clone();
+	public BestNodeReplication clone() {
+		BestNodeReplication c = (BestNodeReplication) super.clone();
+		c = (BestNodeReplication) super.clone();
 		c.myKeys = new MyStore<ComplexKey>();
 		c.myReplicatedKeys = new MyStore<ComplexKey>();
 		return c;
@@ -99,30 +94,30 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 		return true;
 	}
 
-	BestNodeReplication2 getProtocol(Node node) {
-		BestNodeReplication2 val = (BestNodeReplication2) node.getProtocol(ProtocolStub.pid);
+	BestNodeReplication getProtocol(Node node) {
+		BestNodeReplication val = (BestNodeReplication) node.getProtocol(ProtocolStub.pid);
 		return val;
 	}
 
 	@Override
 	public void join(Node contact) {
 		this.finger = new Finger(this.getNode(), new Identifier(new BigInteger(
-				BestNodeReplication2.idLength, CommonState.r)));
+				BestNodeReplication.idLength, CommonState.r)));
 		// step 1: get successor and set as predecessor
-		if (BestNodeReplication2.activeNodes.size() == 0) {
+		if (BestNodeReplication.activeNodes.size() == 0) {
 			this.setSuccessor(null);
 			this.setPredecessor(null);
 		} else {
-			Finger successor = BestNodeReplication2.activeNodes.ceiling(this.finger);
+			Finger successor = BestNodeReplication.activeNodes.ceiling(this.finger);
 			if (successor == null) {
-				successor = BestNodeReplication2.activeNodes.first();
+				successor = BestNodeReplication.activeNodes.first();
 			}
 			this.setSuccessor(successor);
 			Finger oldPred = this.getProtocol(successor.n).setPredecessor(this.finger);
 			if (oldPred == null) {
 				Finger val = this.getProtocol(successor.n).setSuccessor(this.finger);
 				assert (val == null) : this.finger + " " + this.successor + " " + this.predecessor
-						+ " " + BestNodeReplication2.activeNodes;
+						+ " " + BestNodeReplication.activeNodes;
 				this.setPredecessor(successor);
 			} else {
 				Finger val = this.getProtocol(oldPred.n).setSuccessor(this.finger);
@@ -131,17 +126,17 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 			}
 		}
 
-		if (BestNodeReplication2.simStarted) {
+		if (BestNodeReplication.simStarted) {
 			// get the keys that should be mine
-			BestNodeReplication2 proto = this.getProtocol(this.getSuccessor().n);
+			BestNodeReplication proto = this.getProtocol(this.getSuccessor().n);
 
-			assert (proto.myKeys.size() == BestNodeReplication2.keyCreator.getRangeSize(
+			assert (proto.myKeys.size() == BestNodeReplication.keyCreator.getRangeSize(
 					this.getPredecessor(), proto.finger));
 
 			// removed will contain keys that must be re-replicated
-			Collection<? extends Key> top = BestNodeReplication2.keyCreator.getRangeTop(
+			Collection<? extends Key> top = BestNodeReplication.keyCreator.getRangeTop(
 					this.getPredecessor(), this.finger);
-			Collection<? extends Key> bottom = BestNodeReplication2.keyCreator.getRangeBottom(
+			Collection<? extends Key> bottom = BestNodeReplication.keyCreator.getRangeBottom(
 					this.getPredecessor(), this.finger);
 
 			int initialOtherSize = proto.myKeys.size();
@@ -162,11 +157,11 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 				theKey.ownerNode = this.getNode();
 			}
 
-			if (BestNodeReplication2.keepAtSuccessorWindow) {
+			if (BestNodeReplication.keepAtSuccessorWindow) {
 				// move successor keys to correct placement
-				BestNodeReplication2 toRemove = BestNodeReplication2.getNPredecessor(this,
-						BestNodeReplication2.window);
-				BestNodeReplication2 succ = this.getProtocol(this.getSuccessor().n);
+				BestNodeReplication toRemove = BestNodeReplication.getNPredecessor(this,
+						BestNodeReplication.window);
+				BestNodeReplication succ = this.getProtocol(this.getSuccessor().n);
 				MyStore<ComplexKey> successorKeys = succ.myReplicatedKeys;
 				MyStore<ComplexKey> result = successorKeys.removeAllMatching(toRemove.myKeys);
 				int moved = toRemove.reReplicate(succ.getNode(), result);
@@ -174,11 +169,11 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 			}
 		}
 
-		BestNodeReplication2.activeNodes.add(this.finger);
+		BestNodeReplication.activeNodes.add(this.finger);
 	}
 
 	public void killed() {
-		BestNodeReplication2.activeNodes.remove(this.finger);
+		BestNodeReplication.activeNodes.remove(this.finger);
 		this.finger = null;
 
 		// step1: remove my node from topology
@@ -192,10 +187,10 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 			this.getProtocol(this.getPredecessor().n).setSuccessor(this.getSuccessor());
 		}
 
-		if (BestNodeReplication2.simStarted) {
+		if (BestNodeReplication.simStarted) {
 			// step2 : move my keys to my successor
 			assert (this.getSuccessor() != null);
-			BestNodeReplication2 proto = this.getProtocol(this.getSuccessor().n);
+			BestNodeReplication proto = this.getProtocol(this.getSuccessor().n);
 			// removed will contain keys that must be re-replicated
 			int myKeysInitialSize = this.myKeys.size();
 			MyStore<ComplexKey> removed = proto.myReplicatedKeys.removeAllMatching(this.myKeys);
@@ -240,10 +235,10 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 	private int reReplicate(final Node toReplace, MyStore<ComplexKey> removed) {
 		int replicated = 0;
 		int initialRemovedSize = removed.size();
-		Collection<BestNodeReplication2> candidates = this.getCandidates();
+		Collection<BestNodeReplication> candidates = this.getCandidates();
 
-		for (BestNodeReplication2 it : candidates) {
-			final BestNodeReplication2 val = it;
+		for (BestNodeReplication it : candidates) {
+			final BestNodeReplication val = it;
 			final RunnableWithArgs funct = new RunnableWithArgs() {
 				final Node oldReplica = toReplace;
 				final Node newReplica = val.getNode();
@@ -251,7 +246,7 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 				@Override
 				public final void run(Object arg) {
 					ComplexKey key = (ComplexKey) arg;
-					BestNodeReplication2.changeReplica(key, this.oldReplica, this.newReplica);
+					BestNodeReplication.changeReplica(key, this.oldReplica, this.newReplica);
 				}
 			};
 			replicated += it.myReplicatedKeys.moveToMe(removed, funct);
@@ -277,34 +272,34 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 
 	private int replicate(MyStore<ComplexKey> keys) {
 		int replicated = 0;
-		Collection<BestNodeReplication2> candidates = this.getCandidates();
+		Collection<BestNodeReplication> candidates = this.getCandidates();
 
 		int counter = 0;
-		for (BestNodeReplication2 it : candidates) {
-			if (counter >= BestNodeReplication2.replication - 1) {
+		for (BestNodeReplication it : candidates) {
+			if (counter >= BestNodeReplication.replication - 1) {
 				break;
 			}
 			counter++;
 
-			final BestNodeReplication2 val = it;
+			final BestNodeReplication val = it;
 			final RunnableWithArgs funct = new RunnableWithArgs() {
 				final Node newReplica = val.getNode();
 
 				@Override
 				public final void run(Object arg) {
 					ComplexKey key = (ComplexKey) arg;
-					BestNodeReplication2.createReplica(key, this.newReplica);
+					BestNodeReplication.createReplica(key, this.newReplica);
 				}
 			};
 			replicated += it.myReplicatedKeys.addAll(keys, funct);
 		}
-		assert (replicated == keys.size() * (BestNodeReplication2.replication - 1));
+		assert (replicated == keys.size() * (BestNodeReplication.replication - 1));
 		return replicated;
 	}
 
 	public static final void createReplica(ComplexKey key, Node newReplica) {
 		if (key.replicas == null) {
-			key.replicas = new Node[BestNodeReplication2.replication - 1];
+			key.replicas = new Node[BestNodeReplication.replication - 1];
 		}
 		Node[] replicas = key.replicas;
 		for (int it = 0; it < replicas.length; it++) {
@@ -316,13 +311,13 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 		throw new RuntimeException("Should never be reached");
 	}
 
-	private Collection<BestNodeReplication2> getCandidates() {
-		Collection<BestNodeReplication2> candidates;
-		if (BestNodeReplication2.useBestNodes) {
+	private Collection<BestNodeReplication> getCandidates() {
+		Collection<BestNodeReplication> candidates;
+		if (BestNodeReplication.useBestNodes) {
 			// candidates sorted by descending death time
-			candidates = new TreeSet<BestNodeReplication2>(
-					new Comparator<BestNodeReplication2>() {
-						public int compare(BestNodeReplication2 o1, BestNodeReplication2 o2) {
+			candidates = new TreeSet<BestNodeReplication>(
+					new Comparator<BestNodeReplication>() {
+						public int compare(BestNodeReplication o1, BestNodeReplication o2) {
 							int diff = o1.deathTime - o2.deathTime;
 							if (diff == 0) {
 								diff = o1.getNode().getIndex() - o2.getNode().getIndex();
@@ -331,10 +326,10 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 						};
 					});
 		} else {
-			candidates = new ArrayList<BestNodeReplication2>();
+			candidates = new ArrayList<BestNodeReplication>();
 		}
-		BestNodeReplication2 current = this;
-		for (int it = 0; it < BestNodeReplication2.replication; it++) {
+		BestNodeReplication current = this;
+		for (int it = 0; it < BestNodeReplication.replication + 1; it++) {
 			current = current.getProtocol(current.getSuccessor().n);
 			candidates.add(current);
 		}
@@ -367,9 +362,9 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 		this.checkIntegrity();
 		assert (myNode.getFailState() == Fallible.DOWN);
 		myNode.setFailState(Fallible.OK);
-		if (BestNodeReplication2.error > 0) {
+		if (BestNodeReplication.error > 0) {
 			double mean = deathTime1 - currentTime;
-			double variance = BestNodeReplication2.error;
+			double variance = BestNodeReplication.error;
 			long val = Math.round(mean + CommonState.r.nextGaussian() * variance);
 			if (val <= 0) {
 				val = 1;
@@ -413,15 +408,15 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 
 	@Override
 	public void startSim(Node myNode) {
-		BestNodeReplication2.simStarted = true;
+		BestNodeReplication.simStarted = true;
 		if (this.isUp()) {
 			TreeSet<Key> myKeys = new TreeSet<Key>();
 			assert (this.getPredecessor() != null) : this.getPredecessor();
 			assert (this.getPredecessor().id != null) : this.getPredecessor() + " "
 					+ this.getPredecessor().id;
-			myKeys.addAll(BestNodeReplication2.keyCreator.getRangeTop(this.getPredecessor(),
+			myKeys.addAll(BestNodeReplication.keyCreator.getRangeTop(this.getPredecessor(),
 					this.finger));
-			myKeys.addAll(BestNodeReplication2.keyCreator.getRangeBottom(this.getPredecessor(),
+			myKeys.addAll(BestNodeReplication.keyCreator.getRangeBottom(this.getPredecessor(),
 					this.finger));
 
 			for (Key it : myKeys) {
@@ -438,42 +433,42 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 		}
 	}
 
-	static BestNodeReplication2 getNSuccessor(BestNodeReplication2 start, int index) {
+	static BestNodeReplication getNSuccessor(BestNodeReplication start, int index) {
 		assert (index > 0);
 		assert (start.isUp());
 		Finger currentNode = start.getSuccessor();
 		// set on correct neighbour
 		for (int it = 0; it < index - 1; it++) {
 			assert (currentNode != start.finger);
-			BestNodeReplication2 proto = start.getProtocol(currentNode.n);
+			BestNodeReplication proto = start.getProtocol(currentNode.n);
 			assert (proto.isUp());
 			currentNode = proto.getSuccessor();
 		}
 		assert (currentNode != start.finger);
-		BestNodeReplication2 toReturn = start.getProtocol(currentNode.n);
+		BestNodeReplication toReturn = start.getProtocol(currentNode.n);
 		assert (toReturn.isUp());
 		return toReturn;
 	}
 
-	static BestNodeReplication2 getNPredecessor(BestNodeReplication2 start, int index) {
+	static BestNodeReplication getNPredecessor(BestNodeReplication start, int index) {
 		assert (index > 0);
 		assert (start.isUp());
 		Finger currentNode = start.getPredecessor();
 		// set on correct neighbour
 		for (int it = 0; it < index - 1; it++) {
 			assert (currentNode != start.finger);
-			BestNodeReplication2 proto = start.getProtocol(currentNode.n);
+			BestNodeReplication proto = start.getProtocol(currentNode.n);
 			assert (proto.isUp());
 			currentNode = proto.getPredecessor();
 		}
 		assert (currentNode != start.finger);
-		BestNodeReplication2 toReturn = start.getProtocol(currentNode.n);
+		BestNodeReplication toReturn = start.getProtocol(currentNode.n);
 		assert (toReturn.isUp());
 		return toReturn;
 	}
 
 	private void checkIntegrity() {
-		if (!BestNodeReplication2.simStarted)
+		if (!BestNodeReplication.simStarted)
 			return;
 
 		if (true)
@@ -482,7 +477,7 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 		int keysSum = 0;
 		int replicatedKeysSum = 0;
 		for (int it = 0; it < Network.size(); it++) {
-			BestNodeReplication2 proto = this.getProtocol(Network.get(it));
+			BestNodeReplication proto = this.getProtocol(Network.get(it));
 			if (!proto.isUp()) {
 				assert (proto.myKeys == null || proto.myKeys.size() == 0) : proto;
 				continue;
@@ -490,15 +485,15 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 			keysSum += proto.myKeys.size();
 			replicatedKeysSum += proto.myReplicatedKeys.size();
 
-			assert (proto.myKeys.size() == BestNodeReplication2.keyCreator.getRangeSize(
+			assert (proto.myKeys.size() == BestNodeReplication.keyCreator.getRangeSize(
 					proto.getPredecessor(), proto.finger));
 		}
-		assert (keysSum == BestNodeReplication2.keyCreator.getNKeys()) : keysSum + " "
-				+ BestNodeReplication2.keyCreator.getNKeys();
-		assert (replicatedKeysSum == BestNodeReplication2.keyCreator.getNKeys()
-				* (BestNodeReplication2.replication - 1)) : keysSum + " "
-				+ BestNodeReplication2.keyCreator.getNKeys() + " "
-				+ (BestNodeReplication2.replication - 1);
+		assert (keysSum == BestNodeReplication.keyCreator.getNKeys()) : keysSum + " "
+				+ BestNodeReplication.keyCreator.getNKeys();
+		assert (replicatedKeysSum == BestNodeReplication.keyCreator.getNKeys()
+				* (BestNodeReplication.replication - 1)) : keysSum + " "
+				+ BestNodeReplication.keyCreator.getNKeys() + " "
+				+ (BestNodeReplication.replication - 1);
 		return;
 	}
 
@@ -515,11 +510,11 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 
 	@Override
 	public int getReplicationDegree() {
-		return BestNodeReplication2.replication;
+		return BestNodeReplication.replication;
 	}
 
 	public static TreeSet<Key> getAllKeys() {
-		return BestNodeReplication2.keyCreator.getAllKeys();
+		return BestNodeReplication.keyCreator.getAllKeys();
 	}
 
 	@Override
@@ -539,15 +534,15 @@ public class BestNodeReplication2 extends ProtocolStub implements Protocol, Upti
 	public int getAndClearChainMessages() {
 		Collection<List<?>> chains = calculateChains();
 		int retval = 0;
-		for(List<?> i : chains) {
-			retval +=i.size();
+		for (List<?> i : chains) {
+			retval += i.size();
 		}
 		return retval;
 	}
-	
+
 	private HashSet<List<?>> calculateChains() {
 		HashSet<List<?>> chains = new HashSet<List<?>>();
-		for(ComplexKey i: myKeys) {
+		for (ComplexKey i : myKeys) {
 			chains.add(Arrays.asList(i.replicas));
 		}
 		return chains;

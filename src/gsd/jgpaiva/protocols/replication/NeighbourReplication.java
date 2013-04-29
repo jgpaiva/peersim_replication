@@ -359,4 +359,8 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 	public int getMonitoringCount() {
 		return NeighbourReplication.replication;
 	}
+
+	public Finger getFinger() {
+		return this.finger;
+	}
 }

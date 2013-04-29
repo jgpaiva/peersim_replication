@@ -2,8 +2,8 @@ package gsd.jgpaiva.controllers;
 
 import gsd.jgpaiva.protocols.replication.GRUtils;
 import gsd.jgpaiva.protocols.replication.Group;
-import gsd.jgpaiva.protocols.replication.GroupReplication2;
-import gsd.jgpaiva.protocols.replication.GroupReplication2.Mode;
+import gsd.jgpaiva.protocols.replication.GroupReplication;
+import gsd.jgpaiva.protocols.replication.GroupReplication.Mode;
 import gsd.jgpaiva.utils.Pair;
 
 import java.util.List;
@@ -13,33 +13,33 @@ import peersim.core.Network;
 import peersim.core.Node;
 
 public class ResortNetwork extends ControlImpl {
-	private static final String PAR_MIN_TIME = "mintime";
+	private static final String PAR_RESORT_TIME = "resorttime";
 
-	private final int minTime;
+	private final int resortTime;
 
 	public ResortNetwork(String prefix) {
 		super(prefix);
-		this.minTime = Configuration.getInt(prefix + "." + ResortNetwork.PAR_MIN_TIME);
+		this.resortTime = Configuration.getInt(prefix + "." + ResortNetwork.PAR_RESORT_TIME);
 
 	}
 
 	@Override
 	protected boolean executeCycle() {
-		if (!(Network.get(0).getProtocol(this.pid) instanceof GroupReplication2)) {
+		if (!(Network.get(0).getProtocol(this.pid) instanceof GroupReplication)) {
 			this.println("Oh noes, this is not a GroupReplication2 kind of protocol!");
 			return true;
 		}
 
-		if (this.getStep() == this.minTime) {
+		if (this.getStep() == this.resortTime) {
 			reliableNodesToLargerGroups();
-			setMode(GroupReplication2.Mode.LNLB_PREEMPTIVE);
+			setMode(GroupReplication.Mode.LNLB_PREEMPTIVE);
 		}
 
 		return false;
 	}
 
 	private void setMode(Mode newMode) {
-		((GroupReplication2) Network.get(0).getProtocol(this.pid)).setMode(newMode);
+		((GroupReplication) Network.get(0).getProtocol(this.pid)).setMode(newMode);
 	}
 
 	private void reliableNodesToLargerGroups() {

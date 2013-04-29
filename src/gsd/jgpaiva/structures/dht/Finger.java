@@ -7,12 +7,22 @@ import peersim.core.Node;
 public class Finger implements Comparable<Finger> {
 	public final Node n;
 	public final BigInteger id;
+	private boolean isFake;
 
 	public Finger(Node n, BigInteger id) {
 		if (n == null)
 			throw new RuntimeException("Finger with a null node?");
 		this.n = n;
 		this.id = id;
+		this.isFake = false;
+	}
+	
+	public Finger(Node n, BigInteger id, boolean isFake) {
+		if (n == null)
+			throw new RuntimeException("Finger with a null node?");
+		this.n = n;
+		this.id = id;
+		this.isFake = isFake;
 	}
 
 	public Finger(BigInteger id) {
@@ -42,5 +52,9 @@ public class Finger implements Comparable<Finger> {
 		if (this.id != null)
 			return this.id.hashCode();
 		return 0;
+	}
+	
+	public final boolean isFake() {
+		return this.isFake;
 	}
 }

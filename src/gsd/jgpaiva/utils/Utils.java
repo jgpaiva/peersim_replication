@@ -210,6 +210,11 @@ import gsd.protocols.vsp.dht.Mapping;
 		return list.remove(randomNumber);
 	}
 
+	public static <T> T getRandomEl(T[] array) {
+		int randomNumber = CommonState.r.nextInt(array.length);
+		return array[randomNumber];
+	}
+	
 	public static final <T> T getRandomEl(List<T> list) {
 		int randomNumber = CommonState.r.nextInt(list.size());
 		return list.get(randomNumber);

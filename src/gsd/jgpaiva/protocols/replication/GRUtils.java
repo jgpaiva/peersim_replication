@@ -1,6 +1,7 @@
 package gsd.jgpaiva.protocols.replication;
 
 import gsd.jgpaiva.utils.Pair;
+import gsd.jgpaiva.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +41,7 @@ public class GRUtils {
 	}
 
 	public static int getNodeDeath(Node n) {
-		return GroupReplication2.getProtocol(n).deathTime;
+		return GroupReplication.getProtocol(n).deathTime;
 	}
 
 	public static int getGroupDeath(Group g) {
@@ -50,7 +51,7 @@ public class GRUtils {
 		}
 		Collections.sort(deathTimes);
 
-		int numToMerge = g.size() - GroupReplication2.minReplication;
+		int numToMerge = g.size() - GroupReplication.minReplication;
 		// if(g.size < minReplication)
 
 		Iterator<Integer> iter = deathTimes.iterator();
@@ -284,12 +285,6 @@ public class GRUtils {
 	 */
 	public static <X, Y> Collection<X> sliceInversePercentage(Collection<Pair<X, Y>> c, double perc) {
 		List<X> retVal = new ArrayList<X>();
-		if (c.size() < 3) {
-			for (Pair<X, Y> i : c) {
-				retVal.add(i.fst);
-			}
-			return retVal;
-		}
 
 		int initialSize = c.size();
 		int count = 0;
@@ -297,6 +292,10 @@ public class GRUtils {
 			if (count++ <= (initialSize * perc))
 				continue;
 			retVal.add(i.fst);
+		}
+
+		if (retVal.size() == 0 && c.size() > 0) {
+			retVal.add(Utils.getRandomEl(c).fst);
 		}
 		return retVal;
 	}
@@ -308,16 +307,20 @@ public class GRUtils {
 	 * @param perc
 	 * @return
 	 */
-	public static <T> List<T> listAboveAverage(List<Pair<T, Double>> list) {
+	public static <T> List<T> listAboveAverage(List<Pair<T, Double>> c) {
 		double total = 0;
-		for (Pair<T, Double> it : list) {
+		for (Pair<T, Double> it : c) {
 			total += it.snd;
 		}
-		double avg = total / list.size();
+		double avg = total / c.size();
 		List<T> retVal = new ArrayList<T>();
-		for (Pair<T, Double> it : list) {
+		for (Pair<T, Double> it : c) {
 			if (it.snd >= avg)
 				retVal.add(it.fst);
+		}
+
+		if (retVal.size() == 0 && c.size() > 0) {
+			retVal.add(Utils.getRandomEl(c).fst);
 		}
 		return retVal;
 	}

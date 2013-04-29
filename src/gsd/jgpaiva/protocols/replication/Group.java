@@ -2,7 +2,7 @@ package gsd.jgpaiva.protocols.replication;
 
 import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.protocols.ProtocolStub;
-import gsd.jgpaiva.protocols.replication.GroupReplication2.Mode;
+import gsd.jgpaiva.protocols.replication.GroupReplication.Mode;
 import gsd.jgpaiva.structures.dht.FingerGroup;
 import gsd.jgpaiva.utils.Identifier;
 import gsd.jgpaiva.utils.KeyCreator;
@@ -46,8 +46,8 @@ public class Group {
 			successor.keys = totalKeys - this.keys;
 
 			for (Node it : this.finger) {
-				GroupReplication2.getProtocol(it).sendMessage(
-						new GroupReplication2.KeyTransferMessage(moved));
+				GroupReplication.getProtocol(it).sendMessage(
+						new GroupReplication.KeyTransferMessage(moved));
 			}
 			return moved;
 		} else if (1.6 * this.successor.keys < this.keys) {
@@ -57,8 +57,8 @@ public class Group {
 			this.keys = totalKeys - this.successor.keys;
 
 			for (Node it : this.successor.finger) {
-				GroupReplication2.getProtocol(it).sendMessage(
-						new GroupReplication2.KeyTransferMessage(moved));
+				GroupReplication.getProtocol(it).sendMessage(
+						new GroupReplication.KeyTransferMessage(moved));
 			}
 			return moved;
 		}
@@ -101,7 +101,7 @@ public class Group {
 	}
 
 	private Group mergeTo(Group mergeTo) {
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 		if (Group.groups.size() == 1)
 			return null;
 		assert (this.successor != null);
@@ -110,7 +110,7 @@ public class Group {
 		mergeKeysTo(mergeTo);
 		mergeNodesTo(mergeTo);
 
-		GroupReplication2.checkIntegrity();
+		GroupReplication.checkIntegrity();
 		return mergeTo;
 	}
 
@@ -121,12 +121,12 @@ public class Group {
 		mergeTo.load = this.load + mergeTo.load;
 		assert (oldKeys >= 0 && mergeToKeys >= 0) : oldKeys + " " + mergeToKeys;
 		for (Node it : this.successor.finger) {
-			GroupReplication2.getProtocol(it).sendMessage(
-					new GroupReplication2.KeyTransferMessage(oldKeys));
+			GroupReplication.getProtocol(it).sendMessage(
+					new GroupReplication.KeyTransferMessage(oldKeys));
 		}
 		for (Node it : this.finger) {
-			GroupReplication2.getProtocol(it).sendMessage(
-					new GroupReplication2.KeyTransferMessage(mergeToKeys));
+			GroupReplication.getProtocol(it).sendMessage(
+					new GroupReplication.KeyTransferMessage(mergeToKeys));
 		}
 	}
 
@@ -166,7 +166,7 @@ public class Group {
 				this.finger.size();
 		assert (oldSize >= 0) : oldSize + " " + newSize;
 
-		if (GroupReplication2.mode == Mode.LNLB_PREEMPTIVE) {// ||
+		if (GroupReplication.mode == Mode.LNLB_PREEMPTIVE) {// ||
 																// GroupReplication2.mode
 																// == Mode.LNLB)
 																// {
@@ -238,7 +238,7 @@ public class Group {
 			for (int i = 0; i < group.keys; i++)
 				if (CommonState.r.nextInt(2) == 0)
 					newKeys++;
-			int newLoad = GroupReplication2.unevenLoad ? group.load / 100 : newKeys;
+			int newLoad = GroupReplication.unevenLoad ? group.load / 100 : newKeys;
 			return new Pair<Integer, Integer>(newKeys, newLoad);
 		}
 
@@ -249,7 +249,7 @@ public class Group {
 		@Override
 		public Pair<Integer, Integer> getNewKeys(final int initialSize, final int newSize, Group group) {
 			int newLoad = (int) (group.load / (((double) initialSize) / ((double) newSize)));
-			int newKeys = (int) (GroupReplication2.unevenLoad ? Math.ceil(group.keys) * 0.10 : group.load);
+			int newKeys = (int) (GroupReplication.unevenLoad ? Math.ceil(group.keys) * 0.10 : group.load);
 			return new Pair<Integer, Integer>(newKeys, newLoad);
 		}
 
@@ -345,9 +345,9 @@ public class Group {
 				new Comparator<Node>() {
 					@Override
 					public int compare(Node o1, Node o2) {
-						GroupReplication2 g1 = (GroupReplication2) o1.getProtocol(ProtocolStub
+						GroupReplication g1 = (GroupReplication) o1.getProtocol(ProtocolStub
 								.getPID());
-						GroupReplication2 g2 = (GroupReplication2) o2.getProtocol(ProtocolStub
+						GroupReplication g2 = (GroupReplication) o2.getProtocol(ProtocolStub
 								.getPID());
 						int diff = g1.deathTime - g2.deathTime;
 						if (diff == 0) {
@@ -366,21 +366,21 @@ public class Group {
 
 	public void updateMembers() {
 		for (Node it : this.finger) {
-			GroupReplication2.getProtocol(it).setGroup(this);
+			GroupReplication.getProtocol(it).setGroup(this);
 		}
 	}
 
 	void joinNode(Node node) {
 		Group.joinCount++;
 		this.finger.add(node);
-		GroupReplication2.getProtocol(node).sendMessage(
-				new GroupReplication2.KeyTransferMessage(this.keys));
+		GroupReplication.getProtocol(node).sendMessage(
+				new GroupReplication.KeyTransferMessage(this.keys));
 	}
 
 	void removeNode(Node node) {
 		Group.leaveCount++;
 		this.finger.remove(node);
-		GroupReplication2.getProtocol(node).setGroup(null);
+		GroupReplication.getProtocol(node).setGroup(null);
 	}
 
 	public static int getMergesCount() {
