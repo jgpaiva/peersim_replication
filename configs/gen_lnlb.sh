@@ -4,9 +4,9 @@ OUTFOLDER=gen/lnlb_preemptive
 rm -r $OUTFOLDER 2>/dev/null
 mkdir -p $OUTFOLDER
 
-for slice in 0.9 0.5 0.1
+for slice in 0.8 0.9 0.99
 do
-    for aboveavg in 0.9 0.5 0.1
+    for aboveavg in 0.2 0.1 0.01
     do
         echo "creating $slice $aboveavg"
         slice_cut=`echo "$slice" | grep --only-matching -P "(?<=0.).*"`
