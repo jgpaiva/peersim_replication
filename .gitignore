@@ -12,3 +12,5 @@ configs/tmp
 *.jar
 configs/arguments
 *.out
+configs/graphs/*.pdf
+*.pyc
