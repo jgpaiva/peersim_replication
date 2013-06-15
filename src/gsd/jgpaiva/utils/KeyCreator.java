@@ -6,10 +6,13 @@ import gsd.jgpaiva.structures.replication.CountableKey;
 import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.structures.replication.MultiKey;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -32,7 +35,11 @@ public class KeyCreator {
 		MOD_RAND, MOD_LINEAR, MOD_NON_LINEAR, MOD_READ
 	}
 
-	private static boolean multiKey;
+	public enum KeyMode {
+		COMPLEX_KEY, LOAD_KEY, REGULAR_KEY, MULTI_KEY
+	}
+
+	// private static boolean multiKey;
 
 	private final int nKeys;
 	private final int idLength;
@@ -42,29 +49,33 @@ public class KeyCreator {
 	private TreeSet<Key> allKeys;
 	private final Key[] allKeysArray;
 	private final ArrayList<MultiKey> allMultiKeys;
-	private final boolean useComplexKeys;
+	// private final boolean useComplexKeys;
+	private KeyMode keyMode;
 
 	private static KeyCreator instance;
 
 	public static KeyCreator getInstance() {
 		if (KeyCreator.instance == null) {
-			KeyCreator.instance = new KeyCreator(false);
+			KeyCreator.instance = new KeyCreator(KeyMode.REGULAR_KEY);
 		}
 		return KeyCreator.instance;
 	}
 
-	public static KeyCreator getInstance(boolean useComplexKeys) {
+	public static KeyCreator getInstance(KeyMode mode) {
 		if (KeyCreator.instance == null) {
-			KeyCreator.instance = new KeyCreator(useComplexKeys);
+			KeyCreator.instance = new KeyCreator(mode);
 		}
 		return KeyCreator.instance;
 	}
 
-	private KeyCreator(boolean useComplexKeys) {
+	private KeyCreator(KeyMode keyMode) {
 		this.nKeys = Configuration.getInt(this.prefix + "." + KeyCreator.PAR_N_KEYS);
 		this.idLength = GlobalConfig.getIdLength();
-		KeyCreator.multiKey = Configuration.contains(this.prefix + "." + KeyCreator.PAR_MULTI_KEY) ? Configuration
-				.getBoolean(this.prefix + "." + KeyCreator.PAR_MULTI_KEY) : false;
+		if (Configuration.contains(this.prefix + "." + KeyCreator.PAR_MULTI_KEY) ? Configuration
+				.getBoolean(this.prefix + "." + KeyCreator.PAR_MULTI_KEY)
+				: false)
+			keyMode = KeyMode.MULTI_KEY;
+
 		String mode = Configuration.getString(this.prefix + "." + KeyCreator.PAR_MODE);
 		if (mode.compareTo(KeyCreator.MOD_RAND) == 0) {
 			this.initMode = InitMode.MOD_RAND;
@@ -75,13 +86,14 @@ public class KeyCreator {
 		} else if (mode.compareTo(KeyCreator.MOD_READ) == 0) {
 			this.initMode = InitMode.MOD_READ;
 			this.fileToRead = Configuration.getString(this.prefix + "." + KeyCreator.PAR_READ_FILE);
+			this.keyMode = KeyMode.LOAD_KEY;
 		} else {
 			this.initMode = InitMode.MOD_RAND; // Default
 		}
 		this.allKeys = new TreeSet<Key>();
 		this.allMultiKeys = new ArrayList<MultiKey>();
 		this.allKeysArray = null;
-		this.useComplexKeys = useComplexKeys;
+		this.keyMode = keyMode;
 
 		this.createKeys();
 		// this.allKeysArray = this.allKeys.toArray(new Key[0]);
@@ -93,36 +105,59 @@ public class KeyCreator {
 			switch (this.initMode) {
 			case MOD_LINEAR:
 			case MOD_NON_LINEAR:
-			case MOD_READ:
 			case MOD_RAND:
 				for (int i = 0; i < this.nKeys; i++) {
 					BigInteger current = new BigInteger(this.idLength, CommonState.r);
 					this.createNewKey(current);
 				}
+				break;
+			case MOD_READ:
+				Scanner sc;
+				try {
+					sc = new Scanner(new File(this.fileToRead));
+				} catch (FileNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+				sc.skip("#.*\n");
+				sc.useDelimiter(",");
+				while (sc.hasNext()) {
+					String tk = sc.next();
+					int n = Integer.parseInt(tk);
+					BigInteger current = new BigInteger(this.idLength, CommonState.r);
+					this.createNewKey(current, n);
+				}
 			}
+
+		}
+	}
+
+	private void createNewKey(BigInteger value, int load) {
+		if (this.keyMode == KeyMode.LOAD_KEY) {
+			if (!this.allKeys.add(new Key(value, load)))
+				throw new RuntimeException("Key was in treeset!");
 		}
 	}
 
 	private void createNewKey(BigInteger value) {
-		if (!KeyCreator.multiKey) {
-			if (this.useComplexKeys) {
-				if (!this.allKeys.add(new ComplexKey(value)))
-					throw new RuntimeException("Key was in treeset!");
-			} else {
-				if (!this.allKeys.add(new CountableKey(value)))
-					throw new RuntimeException("Key was in treeset!");
-			}
-		} else {
+		if (this.keyMode == KeyMode.MULTI_KEY) {
 			MultiKey temp = new MultiKey(value);
 			if (!this.allMultiKeys.add(temp))
 				throw new RuntimeException("MultiKey was in treeset!");
 			for (Key key : temp.values)
-				if (!this.allKeys.add(key)) throw new RuntimeException("Key was in treeset!");
+				if (!this.allKeys.add(key))
+					throw new RuntimeException("Key was in treeset!");
+		} else if (this.keyMode == KeyMode.COMPLEX_KEY) {
+			if (!this.allKeys.add(new ComplexKey(value)))
+				throw new RuntimeException("Key was in treeset!");
+		} else {
+			if (!this.allKeys.add(new CountableKey(value)))
+				throw new RuntimeException("Key was in treeset!");
 		}
 	}
 
 	public int getRangeSize(Finger lowerFinger, Finger higherFinger) {
-		if (lowerFinger == higherFinger) return this.allKeys.size();
+		if (lowerFinger == higherFinger)
+			return this.allKeys.size();
 
 		BigInteger lowerID = lowerFinger.id;
 		BigInteger higherID = higherFinger.id;

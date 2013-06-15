@@ -14,3 +14,4 @@ configs/arguments
 *.out
 configs/graphs/*.pdf
 *.pyc
+.DS_Store

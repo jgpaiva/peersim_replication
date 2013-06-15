@@ -12,15 +12,24 @@ public class Key implements Comparable<Key> {
 
 	public final BigInteger value;
 	public final MultiKey owner;
+	public final int load;
 
 	public Key(BigInteger value) {
 		this.value = new Identifier(value);
 		this.owner = null;
+		load = 0;
 	}
 
 	public Key(BigInteger value, MultiKey owner) {
 		this.value = new Identifier(value);
 		this.owner = owner;
+		load = 0;
+	}
+
+	public Key(BigInteger value, int load) {
+		this.value = new Identifier(value);
+		this.owner = null;
+		this.load = load;
 	}
 
 	@Override

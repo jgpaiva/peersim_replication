@@ -13,6 +13,7 @@ import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.utils.GlobalConfig;
 import gsd.jgpaiva.utils.Identifier;
 import gsd.jgpaiva.utils.KeyCreator;
+import gsd.jgpaiva.utils.KeyCreator.KeyMode;
 import gsd.jgpaiva.utils.MyStore;
 import gsd.jgpaiva.utils.MyStoreIterator;
 import gsd.jgpaiva.utils.Pair;
@@ -44,7 +45,7 @@ public class BestNodeReplication extends ProtocolStub implements Protocol, Uptim
 
 	private static int idLength;
 	private static int window;
-	private static final KeyCreator keyCreator = KeyCreator.getInstance(true);
+	private static final KeyCreator keyCreator = KeyCreator.getInstance(KeyMode.COMPLEX_KEY);
 	private static int replication;
 	private static boolean keepAtSuccessorWindow;
 	public final static TreeSet<Finger> activeNodes = new TreeSet<Finger>();

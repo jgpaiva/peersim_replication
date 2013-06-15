@@ -16,8 +16,8 @@ def plotxy(f):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Plot a graph')
-    parser.add_argument('files', metavar='files', type=argparse.FileType('r'), nargs='+',
-                            help='files to take as input')
+    parser.add_argument('files', type=argparse.FileType('r'), nargs='+', 
+            help='files to take as input')
     args = parser.parse_args()
 
     #plt.xlabel('x axis label')
