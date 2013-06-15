@@ -52,7 +52,7 @@ def plot_and_save(out_file,*args):
         elif(len(i) == 3):
             plt.plot(x,y,label=i[2])
     plt.legend(loc=0)
-    plt.savefig(out_file)
+    plt.savefig(out_file,bbox_inches='tight')
 
 def get_num_dict(line):
     '''
