@@ -32,13 +32,19 @@ if __name__ == "__main__":
                 x_values2.append(nsize)
 
 
+    plt.figure().set_size_inches(6.5,5)
     plt.xlabel("#Nodes")
     plt.ylabel("Per-node Replication Maintenance Cost (KB)")
 
-    plt.yscale('log')
+    from matplotlib.ticker import EngFormatter
+    formatter = EngFormatter(places=0)
+    plt.gca().xaxis.set_major_formatter(formatter)
 
-    out_file = "intro_3.pdf"
+    plt.yscale('log')
+    plt.xlim(0,1000000)
+
+    out_file = "intro_rep_ma.pdf"
     plot_and_save(
             out_file,
-            (x_values1,chord_values,"Neighbour Replication"),
-            (x_values2,best_values,"Best Node Replication"))
+            (x_values1,chord_values,"Neighbor Replication"),
+            (x_values2,best_values,"Most-Available Replication"))

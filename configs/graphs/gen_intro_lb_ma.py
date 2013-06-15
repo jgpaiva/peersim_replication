@@ -65,13 +65,19 @@ if __name__ == "__main__":
 
             x_values2.append(get_numbers(f)[0])
 
+    plt.figure().set_size_inches(6.5,5)
     plt.xlabel("#Nodes")
     plt.ylabel("% of nodes storing 50% of data")
 
-    plt.ylim(0,0.5)
+    from matplotlib.ticker import EngFormatter
+    formatter = EngFormatter(places=0)
+    plt.gca().xaxis.set_major_formatter(formatter)
 
-    out_file = "intro_4.pdf"
+    plt.ylim(0,0.5)
+    plt.xlim(0,1000000)
+
+    out_file = "intro_lb_ma.pdf"
     plot_and_save(
             out_file,
-            (x_values1,chord_loads,"Neighbour Replication"),
-            (x_values2,best_loads,"Best Node Replication"))
+            (x_values1,chord_loads,"Neighbor Replication"),
+            (x_values2,best_loads,"Most-Available Replication"))
