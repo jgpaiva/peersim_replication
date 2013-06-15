@@ -11,6 +11,7 @@ import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.protocols.ProtocolStub;
 import gsd.jgpaiva.utils.GlobalConfig;
 import gsd.jgpaiva.utils.KeyCreator;
+import gsd.jgpaiva.utils.KeyCreator.KeyMode;
 import gsd.jgpaiva.utils.Pair;
 import gsd.jgpaiva.utils.Utils;
 
@@ -58,7 +59,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 	private static int idLength;
 	static BigInteger ringSize;
-	private static KeyCreator keyCreator = KeyCreator.getInstance();
+	static KeyCreator keyCreator;
 
 	static boolean simStarted = false;
 
@@ -70,7 +71,6 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	protected int deathTime;
 	private int chainMessageCounter = 0;
 	static Mode mode;
-	public static Boolean unevenLoad;
 	private static double slice;
 	private static double aboveAvg;
 	private static boolean keysBeforeLoad;
@@ -90,9 +90,12 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 				+ GroupReplication.PAR_MIN_REPL);
 		GroupReplication.maxReplication = Configuration.getInt(prefix + '.'
 				+ GroupReplication.PAR_MAX_REPL);
-		GroupReplication.unevenLoad = Configuration.getBoolean(prefix + '.'
-				+ GroupReplication.PAR_UNEVEN_LOAD);
+		if (Configuration.contains(prefix + '.' + GroupReplication.PAR_UNEVEN_LOAD))
+			throw new RuntimeException(
+					"Deprecated. Please delete parameter and change keycreator to read distribution.");
 		String modeString = Configuration.getString(prefix + '.' + GroupReplication.MODE);
+
+		keyCreator = KeyCreator.initialize(KeyMode.REGULAR_KEY);
 
 		if (modeString.equals("scatter"))
 			mode = Mode.SCATTER;
@@ -175,13 +178,13 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		else if (mode == Mode.SMALLEST_PREEMPTIVE)
 			GroupReplication.joiner = new JoinSmallestPreemptive();
 
-		if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode == Mode.RANDOM3
-				|| mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
-				|| mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE) {
+//		if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode == Mode.RANDOM3
+//				|| mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
+//				|| mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE) {
 			Group.keyRangeBreaker = Group.LoadSpliter.instance;
-		} else {
-			Group.keyRangeBreaker = Group.RangeSpliter.instance;
-		}
+//		} else {
+//			Group.keyRangeBreaker = Group.RangeSpliter.instance;
+//		}
 
 		if (mode == Mode.RANDOM) {
 			Group.mergeP = Group.RandomNotThisPicker.instance;

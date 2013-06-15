@@ -47,23 +47,20 @@ public class KeyCreator {
 	private String fileToRead;
 
 	private TreeSet<Key> allKeys;
-	private final Key[] allKeysArray;
+	private int totalLoad;
+	private Key[] allKeysArray;
 	private final ArrayList<MultiKey> allMultiKeys;
 	// private final boolean useComplexKeys;
 	private KeyMode keyMode;
+	private int totalKeys;
 
 	private static KeyCreator instance;
-
-	public static KeyCreator getInstance() {
-		if (KeyCreator.instance == null) {
-			KeyCreator.instance = new KeyCreator(KeyMode.REGULAR_KEY);
-		}
-		return KeyCreator.instance;
-	}
-
-	public static KeyCreator getInstance(KeyMode mode) {
+	
+	public static KeyCreator initialize(KeyMode mode) {
 		if (KeyCreator.instance == null) {
 			KeyCreator.instance = new KeyCreator(mode);
+		} else {
+			throw new RuntimeException("Should never happen: double initialization");
 		}
 		return KeyCreator.instance;
 	}
@@ -96,7 +93,8 @@ public class KeyCreator {
 		this.keyMode = keyMode;
 
 		this.createKeys();
-		// this.allKeysArray = this.allKeys.toArray(new Key[0]);
+		this.allKeysArray = this.allKeys.toArray(new Key[0]);
+		this.totalKeys = allKeysArray.length;
 		// this.allKeys = null;
 	}
 
@@ -122,9 +120,10 @@ public class KeyCreator {
 				sc.useDelimiter(",");
 				while (sc.hasNext()) {
 					String tk = sc.next();
-					int n = Integer.parseInt(tk);
+					int load = Integer.parseInt(tk);
 					BigInteger current = new BigInteger(this.idLength, CommonState.r);
-					this.createNewKey(current, n);
+					this.createNewKey(current, load);
+					totalLoad += load;
 				}
 			}
 
@@ -203,5 +202,13 @@ public class KeyCreator {
 
 	public TreeSet<Key> getAllKeys() {
 		return this.allKeys;
+	}
+
+	public int getTotalLoad() {
+		return this.totalLoad;
+	}
+
+	public int getTotalKeys() {
+		return this.totalKeys;
 	}
 }

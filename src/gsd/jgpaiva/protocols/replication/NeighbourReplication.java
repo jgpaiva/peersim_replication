@@ -9,6 +9,7 @@ import gsd.jgpaiva.structures.dht.Finger;
 import gsd.jgpaiva.utils.GlobalConfig;
 import gsd.jgpaiva.utils.Identifier;
 import gsd.jgpaiva.utils.KeyCreator;
+import gsd.jgpaiva.utils.KeyCreator.KeyMode;
 import gsd.jgpaiva.utils.Pair;
 
 import java.math.BigInteger;
@@ -27,7 +28,7 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 
 	private static int idLength;
 	private static BigInteger ringSize;
-	private static KeyCreator keyCreator = KeyCreator.getInstance();
+	private static KeyCreator keyCreator ;
 	private static int replication;
 	public final static TreeSet<Finger> activeNodes = new TreeSet<Finger>();
 
@@ -45,6 +46,7 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 		NeighbourReplication.ringSize = BigInteger.ONE.add(BigInteger.ONE).pow(
 				NeighbourReplication.idLength);
 		NeighbourReplication.replication = GlobalConfig.getReplication();
+		keyCreator = KeyCreator.initialize(KeyMode.REGULAR_KEY); 
 	}
 
 	@Override

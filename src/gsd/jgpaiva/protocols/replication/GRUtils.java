@@ -1,5 +1,6 @@
 package gsd.jgpaiva.protocols.replication;
 
+import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.utils.Pair;
 import gsd.jgpaiva.utils.Utils;
 
@@ -7,11 +8,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import peersim.core.Node;
 
@@ -243,7 +242,7 @@ public class GRUtils {
 	public static List<Pair<Group, Integer>> listGroupKeys(Collection<Group> groups) {
 		List<Pair<Group, Integer>> retVal = new ArrayList<Pair<Group, Integer>>();
 		for (Group it : groups) {
-			retVal.add(new Pair<Group, Integer>(it, it.keys));
+			retVal.add(new Pair<Group, Integer>(it, it.keys()));
 		}
 		Collections.sort(retVal, new ComparePairsSortByLargest<Group>());
 		return retVal;
@@ -323,5 +322,52 @@ public class GRUtils {
 			retVal.add(Utils.getRandomEl(c).fst);
 		}
 		return retVal;
+	}
+
+	public static int calculateIntervalSize(int totalKeys, int keyBott, int keyCeil) {
+		if (keyBott == -1)
+			if (keyCeil == -1) {
+				return totalKeys;
+			} else {
+				throw new RuntimeException("Should never happen: " + keyCeil);
+			}
+		if (keyCeil == -1 && keyBott != -1) {
+			throw new RuntimeException("Should never happen: " + keyBott);
+		}
+
+		if (keyBott == keyCeil) {
+			return 1;
+		}
+		if (keyBott < keyCeil) {
+			return keyCeil - keyBott + 1;
+		} else {
+			return keyCeil + totalKeys - keyBott;
+		}
+	}
+
+	public static Iterator<Integer> circularIterForward(final Key[] toIter, final int startPos) {
+		return new Iterator<Integer>() {
+			Key[] arr = toIter;
+			int pos = startPos;
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public Integer next() {
+				++pos;
+				if (!(pos < toIter.length)) {
+					pos = 0;
+				}
+				return pos;
+			}
+
+			@Override
+			public void remove() {
+				throw new RuntimeException("Not implemented");
+			}
+		};
 	}
 }

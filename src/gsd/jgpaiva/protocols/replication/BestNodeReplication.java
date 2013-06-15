@@ -45,7 +45,7 @@ public class BestNodeReplication extends ProtocolStub implements Protocol, Uptim
 
 	private static int idLength;
 	private static int window;
-	private static final KeyCreator keyCreator = KeyCreator.getInstance(KeyMode.COMPLEX_KEY);
+	public static KeyCreator keyCreator;
 	private static int replication;
 	private static boolean keepAtSuccessorWindow;
 	public final static TreeSet<Finger> activeNodes = new TreeSet<Finger>();
@@ -79,6 +79,7 @@ public class BestNodeReplication extends ProtocolStub implements Protocol, Uptim
 		}
 		this.myKeys = new MyStore<ComplexKey>();
 		this.myReplicatedKeys = new MyStore<ComplexKey>();
+		keyCreator = KeyCreator.initialize(KeyMode.COMPLEX_KEY);
 	}
 
 	@Override
