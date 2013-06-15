@@ -35,11 +35,18 @@ if __name__ == "__main__":
 
             x_values.append(get_numbers(f)[0])
 
+    plt.figure().set_size_inches(6.5,5)
     plt.xlabel("#Nodes")
     plt.ylabel("#Monitored Nodes")
 
-    out_file = "intro_2.pdf"
+    from matplotlib.ticker import EngFormatter
+    formatter = EngFormatter(places=0)
+    plt.gca().xaxis.set_major_formatter(formatter)
+
+    plt.xlim(0,1000000)
+
+    out_file = "intro_mon_chord.pdf"
     plot_and_save(
             out_file,
-            (x_values,chord_monitor,"Neighbour Replication"),
+            (x_values,chord_monitor,"Neighbor Replication"),
             (x_values,vserver_monitor, "Virtual Servers"))
