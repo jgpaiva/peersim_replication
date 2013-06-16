@@ -9,6 +9,8 @@ import gsd.jgpaiva.interfaces.MonitorableProtocol;
 import gsd.jgpaiva.interfaces.UptimeSimulatorProtocol;
 import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.protocols.ProtocolStub;
+import gsd.jgpaiva.protocols.replication.Group.RandomSplit;
+import gsd.jgpaiva.protocols.replication.Group.ReliabilitySplit;
 import gsd.jgpaiva.utils.GlobalConfig;
 import gsd.jgpaiva.utils.KeyCreator;
 import gsd.jgpaiva.utils.KeyCreator.KeyMode;
@@ -39,8 +41,6 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		RANDOM,
 		SMALLEST_PREEMPTIVE,
 		LNLB_MERGE,
-		RANDOM2,
-		RANDOM3,
 		LNLB_SMALLEST,
 		LNLB_REBALANCE,
 		PREEMPTIVE_GROUP,
@@ -75,11 +75,6 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	private static double aboveAvg;
 	private static boolean keysBeforeLoad;
 	private static Joiner joiner;
-
-	// private FingerGroup finger;
-	// private FingerGroup successor;
-	// private FingerGroup predecessor;
-	// private int keys = 0;
 
 	public GroupReplication(String prefix) {
 		super(prefix);
@@ -127,15 +122,12 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			mode = Mode.SURPLUS;
 		else if (modeString.equals("random"))
 			mode = Mode.RANDOM;
-		else if (modeString.equals("random2"))
-			mode = Mode.RANDOM2;
-		else if (modeString.equals("random3"))
-			mode = Mode.RANDOM3;
 		else if (modeString.equals("smallest_preemptive"))
 			mode = Mode.SMALLEST_PREEMPTIVE;
 		else
 			throw new RuntimeException("Could not parse mode?");
 
+		// LNLB_PREEMPTIVE is only set on gsd.jgpaiva.controllers.ResortNetwork
 		if (mode == Mode.LNLB_PREEMPTIVE)
 			setMode(Mode.LNLB);
 		else
@@ -173,18 +165,20 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			GroupReplication.joiner = new JoinSmallest();
 		else if (mode == Mode.SURPLUS)
 			GroupReplication.joiner = new JoinLargest();
-		else if (mode == Mode.RANDOM || mode == Mode.RANDOM2 || mode == Mode.RANDOM3)
+		else if (mode == Mode.RANDOM)
 			GroupReplication.joiner = new JoinRandom();
 		else if (mode == Mode.SMALLEST_PREEMPTIVE)
 			GroupReplication.joiner = new JoinSmallestPreemptive();
 
-//		if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode == Mode.RANDOM3
-//				|| mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode == Mode.PREEMPTIVE_GROUP
-//				|| mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE) {
-			Group.keyRangeBreaker = Group.LoadSpliter.instance;
-//		} else {
-//			Group.keyRangeBreaker = Group.RangeSpliter.instance;
-//		}
+		// if (mode == Mode.LNLB || mode == Mode.LNLB_PREEMPTIVE || mode ==
+		// Mode.RANDOM3
+		// || mode == Mode.LNLB_SMALLEST || mode == Mode.LNLB_REBALANCE || mode
+		// == Mode.PREEMPTIVE_GROUP
+		// || mode == Mode.LNLB_SUPERSIZE || mode == Mode.LNLB_RESCUE) {
+		Group.keyRangeBreaker = Group.LoadSpliter.instance;
+		// } else {
+		// Group.keyRangeBreaker = Group.RangeSpliter.instance;
+		// }
 
 		if (mode == Mode.RANDOM) {
 			Group.mergeP = Group.RandomNotThisPicker.instance;
@@ -192,8 +186,6 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			Group.mergeP = Group.LargestPicker.instance;
 		} else if (mode == Mode.LNLB_MERGE) {
 			Group.mergeP = Group.LoadedPicker.instance;
-		} else if (mode == Mode.RANDOM2) {
-			Group.mergeP = Group.RandomNotThisPicker.instance;
 		} else {
 			Group.mergeP = Group.SuccessorPicker.instance;
 		}
@@ -202,6 +194,12 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			Group.divideP = Group.RandomPicker.instance;
 		} else {
 			Group.divideP = Group.ThisPicker.instance;
+		}
+
+		if (mode == Mode.LNLB_PREEMPTIVE) {
+			Group.groupSplitter = ReliabilitySplit.instance;
+		} else {
+			Group.groupSplitter = RandomSplit.instance;
 		}
 	}
 
@@ -452,6 +450,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		return this.myGroup != null ? this.myGroup.keys() : 0;
 	}
 
+	@Override
 	public int getLoad() {
 		return this.myGroup != null ? this.myGroup.load() : 0;
 	}

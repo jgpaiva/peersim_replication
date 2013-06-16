@@ -1,8 +1,6 @@
 package gsd.jgpaiva.protocols.replication;
 
 import gsd.jgpaiva.observers.Debug;
-import gsd.jgpaiva.protocols.ProtocolStub;
-import gsd.jgpaiva.protocols.replication.GroupReplication.Mode;
 import gsd.jgpaiva.structures.dht.FingerGroup;
 import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.utils.Identifier;
@@ -10,7 +8,6 @@ import gsd.jgpaiva.utils.KeyCreator;
 import gsd.jgpaiva.utils.Utils;
 
 import java.math.BigInteger;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -28,12 +25,13 @@ public class Group {
 	static KeyRangeBreaker keyRangeBreaker;
 	static GroupPicker mergeP;
 	static GroupPicker divideP;
+	static GroupSplitter groupSplitter;
 
 	// shortcut
 	private static int totalKeys;
 	private static KeyCreator keyCreator;
 	// group state variables
-	private TreeSet<Node> finger;
+	TreeSet<Node> finger;
 	Group successor;
 	private Group predecessor;
 
@@ -48,34 +46,6 @@ public class Group {
 	public int checkBalance() {
 		// TODO: implement this
 		throw new RuntimeException("Not yet implemented!");
-		// if (this.successor == null)
-		// return 0;
-		//
-		// if (this.successor.keys() > 1.6 * this.keys()) {
-		// int totalKeys = successor.keys() + this.keys();
-		// int moved = totalKeys / 2 - this.keys();
-		// this.setKeys(this.keys() + moved);
-		// successor.setKeys(totalKeys - this.keys());
-		// //TODO: move pointers accordingly
-		//
-		// for (Node it : this.finger) {
-		// GroupReplication.getProtocol(it).sendMessage(
-		// new GroupReplication.KeyTransferMessage(moved));
-		// }
-		// return moved;
-		// } else if (1.6 * this.successor.keys < this.keys) {
-		// int totalKeys = successor.keys + this.keys;
-		// int moved = totalKeys / 2 - this.successor.keys;
-		// this.successor.keys += moved;
-		// this.keys = totalKeys - this.successor.keys;
-		//
-		// for (Node it : this.successor.finger) {
-		// GroupReplication.getProtocol(it).sendMessage(
-		// new GroupReplication.KeyTransferMessage(moved));
-		// }
-		// return moved;
-		// }
-		// return 0;
 	}
 
 	private Group() {
@@ -184,6 +154,10 @@ public class Group {
 		return newGroup;
 	}
 
+	public interface GroupSplitter {
+		TreeSet<Node> split(int newSize, int oldSize, Group toSplit);
+	}
+
 	private Group splitIntoNewGroup() {
 		Group newGroup = null;
 		TreeSet<Node> setNew = new TreeSet<Node>();
@@ -194,23 +168,41 @@ public class Group {
 				this.finger.size();
 		assert (oldSize >= 0) : oldSize + " " + newSize;
 
-		if (GroupReplication.mode == Mode.LNLB_PREEMPTIVE) {
-			while (this.finger.size() > oldSize) {
-				Node n = GRUtils.getMinDeath(this.finger);
-				this.finger.remove(n);
-				setNew.add(n);
-			}
-		} else {
-			while (this.finger.size() > oldSize) {
-				setNew.add(Utils.removeRandomEl(this.finger));
-			}
-		}
+		setNew = groupSplitter.split(newSize, oldSize, this);
 
 		newGroup = Group.createGroup(setNew);
 
 		newGroup.updateMembers();
 		this.updateMembers();
 		return newGroup;
+	}
+
+	public static class ReliabilitySplit implements GroupSplitter {
+		@Override
+		public TreeSet<Node> split(int newSize, int oldSize, Group toSplit) {
+			TreeSet<Node> retVal = new TreeSet<Node>();
+			while (toSplit.finger.size() > oldSize) {
+				Node n = GRUtils.getMinDeath(toSplit.finger);
+				toSplit.finger.remove(n);
+				retVal.add(n);
+			}
+			return retVal;
+		}
+
+		public static GroupSplitter instance = new ReliabilitySplit();
+	}
+
+	public static class RandomSplit implements GroupSplitter {
+		@Override
+		public TreeSet<Node> split(int newSize, int oldSize, Group toSplit) {
+			TreeSet<Node> retVal = new TreeSet<Node>();
+			while (toSplit.finger.size() > oldSize) {
+				retVal.add(Utils.removeRandomEl(toSplit.finger));
+			}
+			return retVal;
+		}
+
+		public static GroupSplitter instance = new RandomSplit();
 	}
 
 	private void moveKeysTo(Group newGroup) {
@@ -350,39 +342,13 @@ public class Group {
 		public Group getGroup(Group g) {
 			if (Group.groups.size() == 1)
 				return null;
-			Group toMerge;
-			do {
+			Group toMerge = g;
+			while (toMerge == g)
 				toMerge = Utils.getRandomEl(Group.groups);
-			} while (toMerge == g);
 			return toMerge;
 		}
 
 		static RandomNotThisPicker instance = new RandomNotThisPicker();
-	}
-
-	private static TreeSet<Node> getCandidates(TreeSet<Node> set) {
-		// candidates sorted by descending death time
-		TreeSet<Node> candidates = new TreeSet<Node>(
-				new Comparator<Node>() {
-					@Override
-					public int compare(Node o1, Node o2) {
-						GroupReplication g1 = (GroupReplication) o1.getProtocol(ProtocolStub
-								.getPID());
-						GroupReplication g2 = (GroupReplication) o2.getProtocol(ProtocolStub
-								.getPID());
-						int diff = g1.deathTime - g2.deathTime;
-						if (diff == 0) {
-							diff = g1.getNode().getIndex() - g2.getNode().getIndex();
-						}
-						return -diff;
-					}
-				});
-
-		for (Node it : set) {
-			candidates.add(it);
-		}
-		assert (set.size() == candidates.size());
-		return candidates;
 	}
 
 	public void updateMembers() {
@@ -432,11 +398,11 @@ public class Group {
 		return this.keys;
 	}
 
-	private void setLoad(int l) {
+	void setLoad(int l) {
 		this.load = l;
 	}
 
-	private void setKeys(int k) {
+	void setKeys(int k) {
 		this.keys = k;
 	}
 
