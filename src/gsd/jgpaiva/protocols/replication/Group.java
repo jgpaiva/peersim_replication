@@ -44,8 +44,77 @@ public class Group {
 	int keyBott;
 
 	public int checkBalance() {
-		// TODO: implement this
-		throw new RuntimeException("Not yet implemented!");
+		// avoid corner cases
+		if (this.successor == null || this.keys() < 2 || this.successor.keys() < 2)
+			return 0;
+
+		if (this.successor.load() > 1.6 * this.load()) {
+			int totalLoad = successor.load() + this.load();
+			int toMove = totalLoad / 2 - this.load();
+
+			int accum = 0;
+			int newCeil = -1;
+			int keyCount = 0;
+			Key[] keyArray = keyCreator.getKeyArray();
+			Iterator<Integer> it = GRUtils.circularIterForward(keyArray, this.keyCeil);
+			while (accum < toMove) {
+				newCeil = it.next();
+				accum += keyArray[newCeil].load;
+				keyCount++;
+			}
+
+			// avoid cycles trying to move a single key in ping pong
+			if (keyCount < 2)
+				return 0;
+
+			this.setKeys(this.keys() + keyCount);
+			this.successor.setKeys(this.successor.keys() - keyCount);
+			this.setLoad(this.load() + accum);
+			this.successor.setLoad(this.successor.load() - accum);
+
+			this.keyCeil = newCeil;
+			this.successor.keyBott = newCeil;
+
+			for (Node it2 : this.finger) {
+				GroupReplication.getProtocol(it2).sendMessage(
+						new GroupReplication.KeyTransferMessage(keyCount));
+			}
+			return keyCount;
+		} else if (1.6 * this.successor.load() < this.load()) {
+			int totalLoad = successor.load() + this.load();
+			int toMove = totalLoad / 2 - this.successor.load();
+
+			int accum = 0;
+			int newCeil = -1;
+			int keyCount = 0;
+			Key[] keyArray = keyCreator.getKeyArray();
+			Iterator<Integer> it = GRUtils.circularIterBackward(keyArray, this.keyCeil);
+			while (accum < toMove) {
+				accum += keyArray[it.next()].load;
+				keyCount++;
+			}
+			// Ceil pointer is included in interval, must advance one more
+			newCeil = it.next();
+
+			// avoid cycles trying to move a single key in ping pong
+			if (keyCount < 2)
+				return 0;
+
+			this.setKeys(this.keys() - keyCount);
+			this.successor.setKeys(this.successor.keys() + keyCount);
+			this.setLoad(this.load() - accum);
+			this.successor.setLoad(this.successor.load() + accum);
+
+			this.keyCeil = newCeil;
+			this.successor.keyBott = newCeil;
+
+			for (Node it2 : this.successor.finger) {
+				GroupReplication.getProtocol(it2).sendMessage(
+						new GroupReplication.KeyTransferMessage(keyCount));
+			}
+			return keyCount;
+		}
+		return 0;
 	}
 
 	private Group() {
@@ -274,7 +343,7 @@ public class Group {
 		public void getNewKeys(int initialSize, int newSize, Group oldGroup, Group newGroup, Key[] keyArray) {
 			LoadSpliter.instance.getNewKeys(initialSize, newSize, oldGroup, newGroup, keyArray);
 
-			//after moving keys around, move nodes to match the keys
+			// after moving keys around, move nodes to match the keys
 			if (oldGroup.keys() > newGroup.keys()) {
 				oldGroup.switchGroupMembers(newGroup);
 			}

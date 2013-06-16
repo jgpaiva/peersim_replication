@@ -1,6 +1,5 @@
 package gsd.jgpaiva.protocols.replication;
 
-import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.utils.Pair;
 import gsd.jgpaiva.utils.Utils;
 
@@ -365,7 +364,7 @@ public class GRUtils {
 	 * @param startPos
 	 * @return
 	 */
-	public static Iterator<Integer> circularIterForward(final Key[] toIter, final int startPos) {
+	public static Iterator<Integer> circularIterForward(final Object[] toIter, final int startPos) {
 		return new Iterator<Integer>() {
 			int pos = startPos;
 
@@ -381,6 +380,32 @@ public class GRUtils {
 					pos = 0;
 				}
 				return pos;
+			}
+
+			@Override
+			public void remove() {
+				throw new RuntimeException("Not implemented");
+			}
+		};
+	}
+
+	public static Iterator<Integer> circularIterBackward(final Object[] toIter, final int startPos) {
+		return new Iterator<Integer>() {
+			int pos = startPos;
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public Integer next() {
+				int retVal = pos;
+				--pos;
+				if (pos < 0) {
+					pos = toIter.length - 1;
+				}
+				return retVal;
 			}
 
 			@Override
