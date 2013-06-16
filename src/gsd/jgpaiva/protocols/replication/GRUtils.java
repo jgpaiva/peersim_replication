@@ -324,6 +324,17 @@ public class GRUtils {
 		return retVal;
 	}
 
+	/************************ Key array pointer related functions ****************************/
+
+	/**
+	 * Gets the number of keys corresponding to an interval.
+	 * 
+	 * @param totalKeys
+	 * @param keyBott
+	 *            bottom of key interval. if == -1, then match all keys
+	 * @param keyCeil
+	 * @return
+	 */
 	public static int calculateIntervalSize(int totalKeys, int keyBott, int keyCeil) {
 		if (keyBott == -1)
 			if (keyCeil == -1) {
@@ -345,9 +356,17 @@ public class GRUtils {
 		}
 	}
 
+	/**
+	 * Gets a circular iterator for an array of keys, starting on a given
+	 * position and iterating forward in the array (i.e. from the bottom of the
+	 * interval to the ceiling)
+	 * 
+	 * @param toIter
+	 * @param startPos
+	 * @return
+	 */
 	public static Iterator<Integer> circularIterForward(final Key[] toIter, final int startPos) {
 		return new Iterator<Integer>() {
-			Key[] arr = toIter;
 			int pos = startPos;
 
 			@Override

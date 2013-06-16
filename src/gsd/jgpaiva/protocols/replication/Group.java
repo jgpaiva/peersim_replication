@@ -269,6 +269,20 @@ public class Group {
 		static LoadSpliter instance = new LoadSpliter();
 	}
 
+	public static class LoadAndResortSpliter implements KeyRangeBreaker {
+		@Override
+		public void getNewKeys(int initialSize, int newSize, Group oldGroup, Group newGroup, Key[] keyArray) {
+			LoadSpliter.instance.getNewKeys(initialSize, newSize, oldGroup, newGroup, keyArray);
+
+			//after moving keys around, move nodes to match the keys
+			if (oldGroup.keys() > newGroup.keys()) {
+				oldGroup.switchGroupMembers(newGroup);
+			}
+		}
+
+		static LoadSpliter instance = new LoadSpliter();
+	}
+
 	public interface GroupPicker {
 		public Group getGroup(Group g);
 	}
@@ -368,6 +382,14 @@ public class Group {
 		Group.leaveCount++;
 		this.finger.remove(node);
 		GroupReplication.getProtocol(node).setGroup(null);
+	}
+
+	public void switchGroupMembers(Group newGroup) {
+		TreeSet<Node> tmp = this.finger;
+		this.finger = newGroup.finger;
+		newGroup.finger = tmp;
+		this.updateMembers();
+		newGroup.updateMembers();
 	}
 
 	public static int getMergesCount() {
