@@ -28,7 +28,7 @@ public class Group {
 	static GroupSplitter groupSplitter;
 
 	// shortcut
-	private static int totalKeys;
+	private static Integer totalKeys = null;
 	private static KeyCreator keyCreator;
 	// group state variables
 	TreeSet<Node> finger;
@@ -79,6 +79,13 @@ public class Group {
 				GroupReplication.getProtocol(it2).sendMessage(
 						new GroupReplication.KeyTransferMessage(keyCount));
 			}
+			assert GRUtils.calculateIntervalSize(totalKeys, this.keyBott, this.keyCeil) == this.keys() : GRUtils
+					.calculateIntervalSize(totalKeys, this.keyBott, this.keyCeil)
+					+ " " + this.keys();
+			assert GRUtils.calculateIntervalSize(totalKeys, this.successor.keyBott, this.successor.keyCeil) == this.successor
+					.keys() : GRUtils.calculateIntervalSize(totalKeys, this.successor.keyBott,
+					this.successor.keyCeil) + " " + this.successor.keys();
+
 			return keyCount;
 		} else if (1.6 * this.successor.load() < this.load()) {
 			int totalLoad = successor.load() + this.load();
@@ -112,6 +119,13 @@ public class Group {
 				GroupReplication.getProtocol(it2).sendMessage(
 						new GroupReplication.KeyTransferMessage(keyCount));
 			}
+
+			assert GRUtils.calculateIntervalSize(totalKeys, this.keyBott, this.keyCeil) == this.keys() : GRUtils
+					.calculateIntervalSize(totalKeys, this.keyBott, this.keyCeil)
+					+ " " + this.keys();
+			assert GRUtils.calculateIntervalSize(totalKeys, this.successor.keyBott, this.successor.keyCeil) == this.successor
+					.keys() : GRUtils.calculateIntervalSize(totalKeys, this.successor.keyBott,
+					this.successor.keyCeil) + " " + this.successor.keys();
 			return keyCount;
 		}
 		return 0;
@@ -133,12 +147,15 @@ public class Group {
 		Group toReturn = new Group();
 		toReturn.finger = new FingerGroup(set, new Identifier(BigInteger.ZERO));
 		keyCreator = GroupReplication.keyCreator;
+		Group.totalKeys = keyCreator.getTotalKeys();
 		toReturn.setKeys(keyCreator.getNKeys());
 		toReturn.setLoad(keyCreator.getTotalLoad());
-		Group.totalKeys = keyCreator.getTotalKeys();
 		// -1 means match all
 		toReturn.keyBott = -1;
 		toReturn.keyCeil = -1;
+		assert GRUtils.calculateIntervalSize(totalKeys, toReturn.keyBott, toReturn.keyCeil) == toReturn
+				.keys() : GRUtils.calculateIntervalSize(totalKeys, toReturn.keyBott, toReturn.keyCeil) + " "
+				+ toReturn.keys();
 		Group.groups.add(toReturn);
 		return toReturn;
 	}
@@ -182,9 +199,9 @@ public class Group {
 			mergeTo.keyBott = -1;
 			mergeTo.keyCeil = -1;
 		}
-		assert GRUtils.calculateIntervalSize(totalKeys, mergeTo.keyBott, mergeTo.keyCeil) == mergeToKeys : GRUtils
+		assert GRUtils.calculateIntervalSize(totalKeys, mergeTo.keyBott, mergeTo.keyCeil) == mergeTo.keys() : GRUtils
 				.calculateIntervalSize(totalKeys, mergeTo.keyBott, mergeTo.keyCeil)
-				+ " " + mergeToKeys;
+				+ " " + mergeTo.keys();
 
 		assert (oldKeys >= 0 && mergeToKeys >= 0) : oldKeys + " " + mergeToKeys;
 		for (Node it : this.successor.finger) {
@@ -312,27 +329,52 @@ public class Group {
 	public static class LoadSpliter implements KeyRangeBreaker {
 		@Override
 		public void getNewKeys(int initialSize, int newSize, Group oldGroup, Group newGroup, Key[] keyArray) {
+			if (oldGroup.keys() == 1) {
+				throw new RuntimeException("Cannot divide anymore");
+			}
+
 			int newLoad = (int) (oldGroup.load() / (((double) initialSize) / ((double) newSize)));
 			Iterator<Integer> it = GRUtils.circularIterForward(keyArray, oldGroup.keyBott);
 			int accum = 0;
 			int newCeil = -1;
 			int keyCount = 0;
-			while (accum < newLoad) {
+			while (accum <= newLoad) {
 				newCeil = it.next();
 				accum += keyArray[newCeil].load;
 				keyCount++;
 			}
+
+			if (keyCount == oldGroup.keys()) { // rollback one
+				it = GRUtils.circularIterBackward(keyArray, newCeil);
+				accum -= keyArray[it.next()].load;
+				newCeil = it.next();
+				keyCount--;
+			}
+
 			newGroup.keyBott = oldGroup.keyBott;
 			newGroup.keyCeil = newCeil;
 			oldGroup.keyBott = newCeil;
 			if (oldGroup.keyCeil == -1) {
 				oldGroup.keyCeil = keyArray.length - 1;
+				newGroup.keyBott = oldGroup.keyCeil;
 			}
 
 			oldGroup.setLoad(oldGroup.load() - accum);
 			newGroup.setLoad(accum);
 			oldGroup.setKeys(oldGroup.keys() - keyCount);
 			newGroup.setKeys(keyCount);
+
+			assert newGroup.keys() > 0 : newLoad + " " + keyCount + " " + accum + " "
+					+ initialSize + " " + newSize;
+			assert oldGroup.keys() > 0 : newLoad + " " + keyCount + " " + accum + " "
+					+ initialSize + " " + newSize;
+
+			assert GRUtils.calculateIntervalSize(totalKeys, newGroup.keyBott, newGroup.keyCeil) == newGroup
+					.keys() : GRUtils.calculateIntervalSize(totalKeys, newGroup.keyBott, newGroup.keyCeil)
+					+ " " + newGroup.keys();
+			assert GRUtils.calculateIntervalSize(totalKeys, oldGroup.keyBott, oldGroup.keyCeil) == oldGroup
+					.keys() : GRUtils.calculateIntervalSize(totalKeys, oldGroup.keyBott, oldGroup.keyCeil)
+					+ " " + oldGroup.keys();
 		}
 
 		static LoadSpliter instance = new LoadSpliter();

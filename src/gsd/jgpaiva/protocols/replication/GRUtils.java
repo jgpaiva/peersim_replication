@@ -232,6 +232,16 @@ public class GRUtils {
 		return minGrp;
 	}
 
+	public static Collection<Group> filterSingleKey(Collection<Group> c) {
+		Collection<Group> retVal = new ArrayList<Group>();
+		for (Group i : c) {
+			if (i.keys() > 1 || i.size() < GroupReplication.maxReplication) {
+				retVal.add(i);
+			}
+		}
+		return retVal;
+	}
+
 	/**
 	 * get a list of groups, sorted by descending number of keys.
 	 * 
@@ -346,12 +356,12 @@ public class GRUtils {
 		}
 
 		if (keyBott == keyCeil) {
-			return 1;
+			return 0;
 		}
 		if (keyBott < keyCeil) {
-			return keyCeil - keyBott + 1;
+			return keyCeil - keyBott;
 		} else {
-			return keyCeil + totalKeys - keyBott;
+			return (keyCeil + 1) + (totalKeys - keyBott - 1);
 		}
 	}
 

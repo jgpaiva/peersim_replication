@@ -63,7 +63,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 	static boolean simStarted = false;
 
-	private static int maxReplication;
+	static int maxReplication;
 
 	static int minReplication;
 
@@ -87,7 +87,8 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 				+ GroupReplication.PAR_MAX_REPL);
 		if (Configuration.contains(prefix + '.' + GroupReplication.PAR_UNEVEN_LOAD))
 			throw new RuntimeException(
-					"Deprecated. Please delete parameter and change keycreator to read distribution.");
+					GroupReplication.PAR_UNEVEN_LOAD
+							+ " is deprecated. Please delete parameter and change keycreator to read distribution.");
 		String modeString = Configuration.getString(prefix + '.' + GroupReplication.MODE);
 
 		keyCreator = KeyCreator.initialize(KeyMode.REGULAR_KEY);
@@ -263,7 +264,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	class JoinAverageMostLoaded implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getMostAverageLoaded(Group.groups);
+			return GRUtils.getMostAverageLoaded(GRUtils.filterSingleKey(Group.groups));
 		}
 	}
 
@@ -286,7 +287,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		public Group getGroupToJoin(GroupReplication n) {
 			boolean isAboveAvg = GRUtils.isInPercDeathTime(n.getNode(), Group.groups, aboveAvg);
 
-			List<Group> lst1 = GRUtils.listAboveAverage(GRUtils.listGroupAverageLoads(Group.groups));
+			List<Group> lst1 = GRUtils.listAboveAverage(GRUtils.listGroupAverageLoads(GRUtils.filterSingleKey(Group.groups)));
 			if (keysBeforeLoad) {
 				if (isAboveAvg) {
 					Collection<Group> toSelect = GRUtils.slicePercentage(GRUtils.listGroupKeys(lst1), slice);

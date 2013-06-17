@@ -55,7 +55,7 @@ public class KeyCreator {
 	private int totalKeys;
 
 	private static KeyCreator instance;
-	
+
 	public static KeyCreator initialize(KeyMode mode) {
 		if (KeyCreator.instance == null) {
 			KeyCreator.instance = new KeyCreator(mode);
@@ -73,6 +73,7 @@ public class KeyCreator {
 				: false)
 			keyMode = KeyMode.MULTI_KEY;
 
+		this.keyMode = keyMode;
 		String mode = Configuration.getString(this.prefix + "." + KeyCreator.PAR_MODE);
 		if (mode.compareTo(KeyCreator.MOD_RAND) == 0) {
 			this.initMode = InitMode.MOD_RAND;
@@ -90,7 +91,6 @@ public class KeyCreator {
 		this.allKeys = new TreeSet<Key>();
 		this.allMultiKeys = new ArrayList<MultiKey>();
 		this.allKeysArray = null;
-		this.keyMode = keyMode;
 
 		this.createKeys();
 		this.allKeysArray = this.allKeys.toArray(new Key[0]);
@@ -118,13 +118,16 @@ public class KeyCreator {
 				}
 				sc.skip("#.*\n");
 				sc.useDelimiter(",");
+				int counter = 0;
 				while (sc.hasNext()) {
 					String tk = sc.next();
 					int load = Integer.parseInt(tk);
-					BigInteger current = new BigInteger(this.idLength, CommonState.r);
+					BigInteger current = BigInteger.valueOf(counter++);
 					this.createNewKey(current, load);
 					totalLoad += load;
 				}
+				System.err.println("Loaded " + this.allKeys.size() +
+						" keys from " + fileToRead + " for a total load of " + totalLoad);
 			}
 
 		}
