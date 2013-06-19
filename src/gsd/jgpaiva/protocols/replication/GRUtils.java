@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeSet;
 
 import peersim.core.Node;
 
@@ -108,18 +109,13 @@ public class GRUtils {
 		return retVal;
 	}
 
-	public static boolean isInPercDeathTime(Node n, Collection<Group> c, double percent) {
-		int count = 0;
-		int total = 0;
-		int deathTime = getNodeDeath(n);
-		for (Group it : c) {
-			for (Node j : it.getFinger()) {
-				if (getNodeDeath(j) > deathTime)
-					count++;
-				total++;
-			}
-		}
-		return ((double) count) / total > percent;
+	public static boolean isReliable(Node n, TreeSet<Node> activenodes, double percent) {
+		int total = activenodes.size();
+
+		int countMoreReliable = activenodes.tailSet(n, false).size();
+
+		double moreReliablePercent = ((double) countMoreReliable) / total;
+		return moreReliablePercent <= percent;
 	}
 
 	/***************** LOAD related functions ******************/
@@ -133,6 +129,7 @@ public class GRUtils {
 		Collections.sort(lst, new Comparator<Pair<Group, Double>>() {
 			@Override
 			public int compare(Pair<Group, Double> o1, Pair<Group, Double> o2) {
+				// must test, since must return an int
 				if (o2.snd > o1.snd)
 					return -1;
 				else if (o2.snd < o1.snd)
@@ -277,7 +274,7 @@ public class GRUtils {
 
 		int initialSize = c.size();
 		for (Pair<X, Y> i : c) {
-			if (retVal.size() > (initialSize * perc))
+			if (retVal.size() >= (initialSize * perc))
 				break;
 			retVal.add(i.fst);
 		}

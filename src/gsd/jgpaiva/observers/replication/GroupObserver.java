@@ -16,12 +16,11 @@ public class GroupObserver extends ControlImpl {
 
 	@Override
 	public boolean executeCycle() {
-		this.print(this.getStep() + ": ");
-		for(Group it : Group.groups) {
-			this.print(it + " ");
+		for (Group it : Group.groups) {
+			this.println(this.getStep() + " " + it);
+			this.println(this.getStep() + " Keys: " + it.dumpLoads());
 		}
-		this.println("");
-		
+
 		return false;
 	}
 }

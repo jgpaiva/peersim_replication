@@ -4,6 +4,7 @@ import gsd.jgpaiva.observers.Debug;
 import gsd.jgpaiva.structures.dht.FingerGroup;
 import gsd.jgpaiva.structures.replication.Key;
 import gsd.jgpaiva.utils.Identifier;
+import gsd.jgpaiva.utils.IncrementalFreq;
 import gsd.jgpaiva.utils.KeyCreator;
 import gsd.jgpaiva.utils.Utils;
 
@@ -145,7 +146,7 @@ public class Group {
 		TreeSet<Node> set = new TreeSet<Node>();
 		set.add(node);
 		Group toReturn = new Group();
-		toReturn.finger = new FingerGroup(set, new Identifier(BigInteger.ZERO));
+		toReturn.finger = set;
 		keyCreator = GroupReplication.keyCreator;
 		Group.totalKeys = keyCreator.getTotalKeys();
 		toReturn.setKeys(keyCreator.getNKeys());
@@ -553,6 +554,32 @@ public class Group {
 
 	@Override
 	public String toString() {
-		return "L:" + this.load() + "K:" + this.keys() + "" + this.finger + "";
+		return "L:" + this.load() + "K:" + this.keys() + "" + this.finger + " " + this.reliableCount();
+	}
+
+	private String reliableCount() {
+		int count = 0;
+		int avgDeath = 0;
+		for (Node i : this.finger) {
+			GroupReplication p = (GroupReplication) i.getProtocol(GroupReplication.getPID());
+			if (p.isReliable()) {
+				count++;
+			}
+			avgDeath += p.deathTime;
+		}
+		return count + "/" + this.finger.size() + " D:" + (((double) avgDeath) / this.size());
+	}
+
+	public String dumpLoads() {
+		IncrementalFreq f = new IncrementalFreq();
+		Key[] arr = keyCreator.getKeyArray();
+		Iterator<Integer> it = GRUtils.circularIterForward(arr, keyBott);
+		while (true) {
+			Integer cur = it.next();
+			f.add(arr[cur].load);
+			if (cur == keyCeil)
+				break;
+		}
+		return f.toString();
 	}
 }
