@@ -77,21 +77,6 @@ public class MembershipController extends ControlImpl {
 			throw new RuntimeException(e); // should never happen
 		}
 
-		// this.availabilityList.add(new Pair<Node, Integer>(Network.get(6),
-		// 4));
-		// this.availabilityList.add(new Pair<Node, Integer>(Network.get(1),
-		// 8));
-		// this.availabilityList.add(new Pair<Node, Integer>(Network.get(3),
-		// 5));
-		// this.availabilityList.add(new Pair<Node, Integer>(Network.get(0),
-		// 8));
-		// this.availabilityList.add(new Pair<Node, Integer>(Network.get(2),
-		// 8));
-		//
-		// System.err.println(this.availabilityList);
-		// if (true)
-		// throw new RuntimeException();
-
 		this.initialize();
 
 		IncrementalFreq stats = new IncrementalFreq();

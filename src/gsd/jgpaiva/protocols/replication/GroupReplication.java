@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import peersim.config.Configuration;
+import peersim.core.CommonState;
 import peersim.core.Fallible;
 import peersim.core.Node;
 import peersim.core.Protocol;
@@ -136,6 +137,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		else if (modeString.equals("supersize")) {
 			mode = Mode.SUPERSIZE;
 			GroupReplication.maxReplication *= 2;
+			mode = Mode.LNLB;
 		} else if (modeString.equals("surplus"))
 			mode = Mode.SURPLUS;
 		else if (modeString.equals("random"))
@@ -178,8 +180,8 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			GroupReplication.joiner = new JoinPreemtive();
 		else if (mode == Mode.PREEMPTIVE_GROUP)
 			GroupReplication.joiner = new JoinPreemtiveGroup();
-		else if (mode == Mode.SUPERSIZE)
-			GroupReplication.joiner = new JoinSmallest();
+		// else if (mode == Mode.SUPERSIZE)
+		// GroupReplication.joiner = new JoinSmallest();
 		else if (mode == Mode.SURPLUS)
 			GroupReplication.joiner = new JoinLargest();
 		else if (mode == Mode.RANDOM)
@@ -228,8 +230,8 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		return true;
 	}
 
-	static GroupReplication getProtocol(Node node) {
-		GroupReplication val = (GroupReplication) node.getProtocol(ProtocolStub.pid);
+	public static GroupReplication getProtocol(Node node) {
+		GroupReplication val = (GroupReplication) node.getProtocol(getPID());
 		return val;
 	}
 
@@ -250,7 +252,22 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			Debug.debug(this, " joined at " + toJoin);
 
 			if (this.myGroup.size() > GroupReplication.maxReplication) {
-				this.myGroup.divide();
+				if (mode == Mode.LNLB_PREEMPTIVE) {
+					// I should divide
+					int stable = 0;
+					for (Node i : this.myGroup.getFinger()) {
+						GroupReplication p = getProtocol(i);
+						if (p.isReliable) {
+							stable++;
+						}
+					}
+					boolean isStable = stable > minReplication;
+					if (isStable)
+						this.myGroup.divide();
+					else if (this.myGroup.size() > GroupReplication.maxReplication * 2)
+						this.myGroup.divide();
+				} else
+					this.myGroup.divide();
 			}
 		}
 		if (!(this.myGroup.keys() > 0))
@@ -258,6 +275,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 					this.getNode() + " " + this.myGroup);
 		if (mode == Mode.SCATTER || mode == Mode.LNLB_REBALANCE)
 			checkBalance();
+		System.out.println("J " + CommonState.getTime() + " " + activeNodes.size() + " " + this.getKeys());
 	}
 
 	private static void checkBalance() {
@@ -412,12 +430,14 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 	@Override
 	public void kill(Collection<Pair<Node, Integer>> availabilityList) {
+		int keys = this.getKeys();
 		GroupReplication.checkIntegrity();
 		assert (this.getNode().getFailState() == Fallible.OK);
 		this.killed(availabilityList);
 		this.getNode().setFailState(Fallible.DOWN);
 		GroupReplication.checkIntegrity();
 		activeNodes.remove(this.getNode());
+		System.out.println("K " + CommonState.getTime() + " " + activeNodes.size() + " " + keys);
 	}
 
 	static final class KeyTransferMessage implements CostAwareMessage {
@@ -536,5 +556,9 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 	public boolean isReliable() {
 		return isReliable;
+	}
+
+	public int getDeathTime() {
+		return this.deathTime;
 	}
 }

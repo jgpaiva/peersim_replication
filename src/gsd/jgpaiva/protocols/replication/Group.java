@@ -1,18 +1,16 @@
 package gsd.jgpaiva.protocols.replication;
 
 import gsd.jgpaiva.observers.Debug;
-import gsd.jgpaiva.structures.dht.FingerGroup;
 import gsd.jgpaiva.structures.replication.Key;
-import gsd.jgpaiva.utils.Identifier;
 import gsd.jgpaiva.utils.IncrementalFreq;
 import gsd.jgpaiva.utils.KeyCreator;
 import gsd.jgpaiva.utils.Utils;
 
-import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeSet;
 
+import peersim.core.CommonState;
 import peersim.core.Node;
 
 public class Group {
@@ -213,6 +211,10 @@ public class Group {
 			GroupReplication.getProtocol(it).sendMessage(
 					new GroupReplication.KeyTransferMessage(mergeToKeys));
 		}
+
+		int tKeys = this.successor.finger.size() * oldKeys + this.finger.size() * mergeToKeys;
+		System.out.println("M " + CommonState.getTime() + " " + GroupReplication.getActiveNodes().size()
+				+ " " + tKeys);
 	}
 
 	private void mergeNodesTo(Group mergeTo) {
@@ -306,6 +308,9 @@ public class Group {
 			System.out.println("WARNING: group with zero load: newLoad:" + newGroup.load() + " oldLoad:"
 					+ this.load() + " initialSize:" + totalSize + " newSize:" + newSize);
 		}
+		int tKeys = this.keys() * this.size() + newGroup.keys() * newGroup.size();
+		System.out.println("D " + CommonState.getTime() + " " + GroupReplication.getActiveNodes().size()
+				+ " " + tKeys);
 	}
 
 	private void setAsPredecessor(Group newGroup) {
@@ -573,6 +578,9 @@ public class Group {
 	public String dumpLoads() {
 		IncrementalFreq f = new IncrementalFreq();
 		Key[] arr = keyCreator.getKeyArray();
+		if (keyBott == keyCeil)
+			return "ALL";
+
 		Iterator<Integer> it = GRUtils.circularIterForward(arr, keyBott);
 		while (true) {
 			Integer cur = it.next();

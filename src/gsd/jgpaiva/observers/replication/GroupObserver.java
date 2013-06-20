@@ -18,7 +18,6 @@ public class GroupObserver extends ControlImpl {
 	public boolean executeCycle() {
 		for (Group it : Group.groups) {
 			this.println(this.getStep() + " " + it);
-			this.println(this.getStep() + " Keys: " + it.dumpLoads());
 		}
 
 		return false;

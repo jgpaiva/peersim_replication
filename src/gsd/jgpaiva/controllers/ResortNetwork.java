@@ -43,20 +43,20 @@ public class ResortNetwork extends ControlImpl {
 	}
 
 	private void reliableNodesToLargerGroups() {
-		List<Pair<Node, Integer>> deathTimes = GRUtils.listNodeDeaths(Group.groups);
-		List<Pair<Group, Integer>> groupKeys = GRUtils.listGroupKeys(Group.groups);
-
-		int counter = 0;
-		for (Pair<Group, Integer> it : groupKeys) {
-			Group grp = it.fst;
-
-			int size = grp.size();
-			grp.getFinger().clear();
-			for (int it2 = 0; it2 < size; it2++) {
-				Pair<Node, Integer> n = deathTimes.get(counter++);
-				grp.getFinger().add(n.fst);
-			}
-			grp.updateMembers();
-		}
+//		List<Pair<Node, Integer>> deathTimes = GRUtils.listNodeDeaths(Group.groups);
+//		List<Pair<Group, Integer>> groupKeys = GRUtils.listGroupKeys(Group.groups);
+//
+//		int counter = 0;
+//		for (Pair<Group, Integer> it : groupKeys) {
+//			Group grp = it.fst;
+//
+//			int size = grp.size();
+//			grp.getFinger().clear();
+//			for (int it2 = 0; it2 < size; it2++) {
+//				Pair<Node, Integer> n = deathTimes.get(counter++);
+//				grp.getFinger().add(n.fst);
+//			}
+//			grp.updateMembers();
+//		}
 	}
 }
