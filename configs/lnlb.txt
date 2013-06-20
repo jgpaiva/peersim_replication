@@ -38,9 +38,9 @@ protocol.r gsd.jgpaiva.protocols.replication.GroupReplication
 protocol.r.step CYCLE
 protocol.r.minrepl 3
 protocol.r.maxrepl 9
-protocol.r.mode supersize
-#
-#
+protocol.r.mode lnlb
+
+
 ################### initialization ======================
 
 #
@@ -104,7 +104,7 @@ control.queries.repeats 10
 control.queriescheck gsd.jgpaiva.observers.replication.Queries
 control.queriescheck.protocol r
 control.queriescheck.step 1
-control.queriescheck.initstep 100470
+control.queriescheck.initstep 26470
 control.queriescheck.finalstep ENDTIME+10
 control.queriescheck.repeats 1
 control.queriescheck.doevery 10000

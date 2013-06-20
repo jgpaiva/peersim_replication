@@ -38,9 +38,10 @@ protocol.r gsd.jgpaiva.protocols.replication.GroupReplication
 protocol.r.step CYCLE
 protocol.r.minrepl 3
 protocol.r.maxrepl 9
-protocol.r.mode supersize
-#
-#
+protocol.r.mode lnlb_preemptive
+protocol.r.slice 0.5
+protocol.r.reliable 0.5
+
 ################### initialization ======================
 
 #
@@ -58,6 +59,12 @@ control.memb.step 1
 keyCreator.nkeys KEYS
 keyCreator.initmode read
 keyCreator.readfile arguments/zipf.dist
+
+control.resort gsd.jgpaiva.controllers.ResortNetwork
+control.resort.resorttime 26470
+control.resort.finalstep ENDTIME
+control.resort.protocol r
+control.resort.step 1
 
 #
 ################ observers  ==============================
@@ -104,7 +111,7 @@ control.queries.repeats 10
 control.queriescheck gsd.jgpaiva.observers.replication.Queries
 control.queriescheck.protocol r
 control.queriescheck.step 1
-control.queriescheck.initstep 100470
+control.queriescheck.initstep 26470
 control.queriescheck.finalstep ENDTIME+10
 control.queriescheck.repeats 1
 control.queriescheck.doevery 10000
@@ -132,4 +139,4 @@ control.groups3.doevery 10000
 
 include.protocol r
 
-include.control memb debug messagecost keys gsize roundstats queries monitor queriescheck groups groups2 groups3
+include.control memb debug messagecost keys gsize roundstats queries monitor queriescheck resort groups groups2 groups3
