@@ -23,7 +23,7 @@ do
 
     let COUNTER=COUNTER+1
 
-    if [ $COUNTER == 8 ]
+    if [ $COUNTER == 7 ]
     then
         for job in `jobs -p`
         do

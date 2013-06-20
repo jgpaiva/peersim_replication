@@ -1,4 +1,4 @@
-for i in `ls tmp | grep "surplus\|supersize\|scatter" | sort -g` 
+for i in `ls tmp | grep "best\|surplus\|supersize\|scatter" | sort -g` 
 do 
     i="tmp/$i"
     RES1=`cat $i/control.queries | grep --only-matching -P "50 Per.*" | head -n 1 | grep -oP "(?<=\: ).*" 2>/dev/null`

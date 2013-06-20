@@ -10,6 +10,6 @@ s = ""
 
 print("# zipf distribution with","alpha:",alpha,"n:",n,"max:",max(dist),"total:",sum(dist))
 
-for i in sorted(dist):
+for i in dist:
     print(s + str(i),end="")
     s = ","
