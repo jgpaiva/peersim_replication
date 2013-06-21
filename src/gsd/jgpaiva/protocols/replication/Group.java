@@ -270,8 +270,23 @@ public class Group {
 		@Override
 		public TreeSet<Node> split(int newSize, int oldSize, Group toSplit) {
 			TreeSet<Node> retVal = new TreeSet<Node>();
+			TreeSet<Node> reliable = new TreeSet<Node>();
+			TreeSet<Node> unReliable = new TreeSet<Node>();
+
+			for (Node it : toSplit.finger) {
+				GroupReplication p = GroupReplication.getProtocol(it);
+				if (p.isReliable())
+					reliable.add(p.getNode());
+				else
+					unReliable.add(p.getNode());
+			}
+
 			while (toSplit.finger.size() > oldSize) {
-				Node n = GRUtils.getMinDeath(toSplit.finger);
+				Node n;
+				if (unReliable.size() > 0)
+					n = Utils.removeRandomEl(unReliable);
+				else
+					n = Utils.removeRandomEl(reliable);
 				toSplit.finger.remove(n);
 				retVal.add(n);
 			}

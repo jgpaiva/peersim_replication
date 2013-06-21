@@ -328,7 +328,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			List<Group> lst1 = GRUtils.listAboveAverage(GRUtils.listGroupAverageLoads(singleKey));
 			System.out.println("L:" + lst1.size());
 
-			if (n.isReliable) {
+			if (!n.isReliable) {
 				Collection<Group> toSelect = GRUtils.sliceInversePercentage(
 						GRUtils.listGroupKeys(lst1), slice);
 				System.out.println("R:" + toSelect.size());
