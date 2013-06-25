@@ -17,25 +17,18 @@ import peersim.core.Node;
 public class GRUtils {
 
 	/***************** DEATH TIME related functions ******************/
-
+	
 	public static Group getNextGroupDeath(Collection<Group> lst) {
-		Node node = null;
 		Group group = null;
 		int minTime = 0;
 
-		for (Group g : lst) {
-			for (Node n : g.getFinger()) {
-				if (node == null) {
-					node = n;
-					group = g;
-					minTime = getNodeDeath(n);
-				} else if (getNodeDeath(n) < minTime) {
-					node = n;
+		for (Group g : lst)
+			for (Node n : g.getFinger())
+				if (group == null || getNodeDeath(n) < minTime) {
 					group = g;
 					minTime = getNodeDeath(n);
 				}
-			}
-		}
+
 		return group;
 	}
 
@@ -233,6 +226,16 @@ public class GRUtils {
 		Collection<Group> retVal = new ArrayList<Group>();
 		for (Group i : c) {
 			if (i.keys() > 1 || i.size() < GroupReplication.maxReplication) {
+				retVal.add(i);
+			}
+		}
+		return retVal;
+	}
+
+	public static Collection<Group> filterSingleKey2(HashSet<Group> c) {
+		Collection<Group> retVal = new ArrayList<Group>();
+		for (Group i : c) {
+			if (i.keys() > 1) {
 				retVal.add(i);
 			}
 		}

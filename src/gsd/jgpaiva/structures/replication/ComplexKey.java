@@ -1,6 +1,5 @@
 package gsd.jgpaiva.structures.replication;
 
-
 import java.math.BigInteger;
 
 import peersim.core.Node;
@@ -11,5 +10,9 @@ public class ComplexKey extends Key {
 
 	public ComplexKey(BigInteger value) {
 		super(value);
+	}
+
+	public ComplexKey(BigInteger value, int load) {
+		super(value, load);
 	}
 }

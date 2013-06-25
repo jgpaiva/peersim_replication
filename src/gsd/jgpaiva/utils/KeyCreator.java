@@ -41,7 +41,7 @@ public class KeyCreator {
 
 	// private static boolean multiKey;
 
-	private final int nKeys;
+	private int nKeys;
 	private final int idLength;
 	private InitMode initMode;
 	private String fileToRead;
@@ -71,7 +71,8 @@ public class KeyCreator {
 		if (Configuration.contains(this.prefix + "." + KeyCreator.PAR_MULTI_KEY) ? Configuration
 				.getBoolean(this.prefix + "." + KeyCreator.PAR_MULTI_KEY)
 				: false)
-			keyMode = KeyMode.MULTI_KEY;
+			// keyMode = KeyMode.MULTI_KEY;
+			throw new RuntimeException("I have no idea what this does");
 
 		this.keyMode = keyMode;
 		String mode = Configuration.getString(this.prefix + "." + KeyCreator.PAR_MODE);
@@ -84,7 +85,6 @@ public class KeyCreator {
 		} else if (mode.compareTo(KeyCreator.MOD_READ) == 0) {
 			this.initMode = InitMode.MOD_READ;
 			this.fileToRead = Configuration.getString(this.prefix + "." + KeyCreator.PAR_READ_FILE);
-			this.keyMode = KeyMode.LOAD_KEY;
 		} else {
 			this.initMode = InitMode.MOD_RAND; // Default
 		}
@@ -95,7 +95,7 @@ public class KeyCreator {
 		this.createKeys();
 		this.allKeysArray = this.allKeys.toArray(new Key[0]);
 		this.totalKeys = allKeysArray.length;
-		// this.allKeys = null;
+		this.nKeys = this.totalKeys;
 	}
 
 	private void createKeys() {
@@ -123,7 +123,7 @@ public class KeyCreator {
 					String tk = sc.next();
 					int load = Integer.parseInt(tk);
 					BigInteger current = BigInteger.valueOf(counter++);
-					this.createNewKey(current, load);
+					this.createNewKeyWithLoad(current, load);
 					totalLoad += load;
 				}
 				System.err.println("Loaded " + this.allKeys.size() +
@@ -133,11 +133,12 @@ public class KeyCreator {
 		}
 	}
 
-	private void createNewKey(BigInteger value, int load) {
-		if (this.keyMode == KeyMode.LOAD_KEY) {
-			if (!this.allKeys.add(new Key(value, load)))
+	private void createNewKeyWithLoad(BigInteger value, int load) {
+		if (this.keyMode == KeyMode.COMPLEX_KEY) {
+			if (!this.allKeys.add(new ComplexKey(value, load)))
 				throw new RuntimeException("Key was in treeset!");
-		}
+		} else if (!this.allKeys.add(new Key(value, load)))
+			throw new RuntimeException("Key was in treeset!");
 	}
 
 	private void createNewKey(BigInteger value) {

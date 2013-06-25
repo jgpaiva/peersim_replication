@@ -154,7 +154,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			setMode(mode);
 	}
 
-	public void setMode(Mode mode) {
+	public static void setMode(Mode mode) {
 		System.err.println("Working in " + mode + " mode");
 
 		if (mode == Mode.LNLB_PREEMPTIVE) {
@@ -252,6 +252,11 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			Debug.debug(this, " joined at " + toJoin);
 
 			if (this.myGroup.size() > GroupReplication.maxReplication) {
+				if (this.myGroup.keys() <= 1)
+					System.err.println("WARNING: joined " + this.myGroup
+							+ " and caused divide. Using joiner:" + joiner
+							+ " and toJoin:" + toJoin);
+
 				if (mode == Mode.LNLB_PREEMPTIVE) {
 					// I should divide
 					int stable = 0;

@@ -6,6 +6,7 @@ import gsd.jgpaiva.utils.IncrementalFreq;
 import gsd.jgpaiva.utils.KeyCreator;
 import gsd.jgpaiva.utils.Utils;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -168,6 +169,7 @@ public class Group {
 
 	public void divide() {
 		Group divideTo = divideP.getGroup(this);
+		assert divideTo.keys() > 1 : divideTo + " " + this + " " + divideP;
 		Debug.debug(this, " will divide to:" + divideTo);
 		Group res = divideTo(divideTo);
 		Debug.debug(this, " divided and created: " + res + "\nDEBUG groups: " + groups);
@@ -206,7 +208,7 @@ public class Group {
 				+ " " + succ.keys();
 
 		assert (oldKeys >= 0 && mergeToKeys >= 0) : oldKeys + " " + mergeToKeys;
-		
+
 		for (Node it : succ.finger) {
 			GroupReplication.getProtocol(it).sendMessage(
 					new GroupReplication.KeyTransferMessage(oldKeys));
@@ -238,8 +240,10 @@ public class Group {
 
 	private Group divideTo(Group divideTo) {
 		Group.divisionsCount++;
-		if (divideTo == null)
+		if (divideTo == null) {
+			System.err.println("WARNING: no divideTo, setting to myself: " + this + " ALL:" + groups);
 			divideTo = this;
+		}
 
 		Group newGroup = splitIntoNewGroup();
 		divideTo.moveKeysTo(newGroup);
@@ -355,7 +359,7 @@ public class Group {
 		@Override
 		public void getNewKeys(int initialSize, int newSize, Group oldGroup, Group newGroup, Key[] keyArray) {
 			if (oldGroup.keys() == 1) {
-				throw new RuntimeException("Cannot divide anymore");
+				throw new RuntimeException("Cannot divide anymore. Groups: " + Group.groups);
 			}
 
 			int newLoad = (int) (oldGroup.load() / (((double) initialSize) / ((double) newSize)));
@@ -438,7 +442,7 @@ public class Group {
 			if (Group.groups.size() == 1)
 				return null;
 			Group mostLoaded = null;
-			for (Group i : Group.groups) {
+			for (Group i : GRUtils.filterSingleKey(Group.groups)) {
 				if (i != g) {
 					if (mostLoaded == null
 							|| GRUtils.getAvgGroupLoad(i) > GRUtils.getAvgGroupLoad(mostLoaded))
@@ -457,7 +461,7 @@ public class Group {
 			if (Group.groups.size() == 1)
 				return null;
 			Group largest = null;
-			for (Group i : Group.groups) {
+			for (Group i : GRUtils.filterSingleKey(Group.groups)) {
 				if (i != g) {
 					if (largest == null || i.size() > largest.size())
 						largest = i;
@@ -481,7 +485,7 @@ public class Group {
 	static class RandomPicker implements GroupPicker {
 		@Override
 		public Group getGroup(Group g) {
-			return Utils.getRandomEl(Group.groups);
+			return Utils.getRandomEl(GRUtils.filterSingleKey2(Group.groups));
 		}
 
 		static RandomPicker instance = new RandomPicker();
@@ -490,11 +494,12 @@ public class Group {
 	static class RandomNotThisPicker implements GroupPicker {
 		@Override
 		public Group getGroup(Group g) {
-			if (Group.groups.size() == 1)
+			Collection<Group> gs = GRUtils.filterSingleKey(Group.groups);
+			if (gs.size() <= 1)
 				return null;
 			Group toMerge = g;
 			while (toMerge == g)
-				toMerge = Utils.getRandomEl(Group.groups);
+				toMerge = Utils.getRandomEl(gs);
 			return toMerge;
 		}
 
