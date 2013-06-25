@@ -4,8 +4,8 @@ from __future__ import print_function
 import numpy
 
 alpha = 2.5
-n = 100000
-dist = numpy.random.zipf(alpha,100000)
+n = 1000000
+dist = numpy.random.zipf(alpha,n)
 s = ""
 
 print("# zipf distribution with","alpha:",alpha,"n:",n,"max:",max(dist),"total:",sum(dist))

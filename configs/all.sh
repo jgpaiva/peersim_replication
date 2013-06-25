@@ -20,6 +20,7 @@ do
 
     date
     ./all_wait.sh $i runs/$TORUN &
+    sleep 30
 
     let COUNTER=COUNTER+1
 
