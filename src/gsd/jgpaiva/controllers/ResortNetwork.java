@@ -1,16 +1,9 @@
 package gsd.jgpaiva.controllers;
 
-import gsd.jgpaiva.protocols.replication.GRUtils;
-import gsd.jgpaiva.protocols.replication.Group;
 import gsd.jgpaiva.protocols.replication.GroupReplication;
 import gsd.jgpaiva.protocols.replication.GroupReplication.Mode;
-import gsd.jgpaiva.utils.Pair;
-
-import java.util.List;
-
 import peersim.config.Configuration;
 import peersim.core.Network;
-import peersim.core.Node;
 
 public class ResortNetwork extends ControlImpl {
 	private static final String PAR_RESORT_TIME = "resorttime";

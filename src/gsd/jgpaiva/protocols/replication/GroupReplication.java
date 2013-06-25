@@ -307,14 +307,14 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	static class JoinScatter implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getMostLoaded(GRUtils.listSmallest(Group.groups));
+			return GRUtils.getMostLoaded(GRUtils.listSmallest(GRUtils.filterSingleKey(Group.groups)));
 		}
 	}
 
 	static class JoinSmallestAverageMostLoaded implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getMostAverageLoaded(Group.groups);
+			return GRUtils.getMostAverageLoaded(GRUtils.filterSingleKey(Group.groups));
 		}
 	}
 
@@ -344,7 +344,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	static class JoinPreemtiveGroup implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			List<Pair<Group, Integer>> lst = GRUtils.listGroupDeaths(Group.groups);
+			List<Pair<Group, Integer>> lst = GRUtils.listGroupDeaths(GRUtils.filterSingleKey(Group.groups));
 			Collection<Group> lst2 = GRUtils.slicePercentage(lst, 0.5);
 			return GRUtils.getMostAverageLoaded(lst2);
 		}
@@ -353,35 +353,35 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	static class JoinPreemtive implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getNextGroupDeath(Group.groups);
+			return GRUtils.getNextGroupDeath(GRUtils.filterSingleKey(Group.groups));
 		}
 	}
 
 	static class JoinRandom implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return Utils.getRandomEl(Group.groups);
+			return Utils.getRandomEl(GRUtils.filterSingleKey(Group.groups));
 		}
 	}
 
 	static class JoinSmallestPreemptive implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getNextGroupDeath(GRUtils.listSmallest(Group.groups));
+			return GRUtils.getNextGroupDeath(GRUtils.listSmallest(GRUtils.filterSingleKey(Group.groups)));
 		}
 	}
 
 	static class JoinSmallest implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return Utils.getRandomEl(GRUtils.listSmallest(Group.groups));
+			return Utils.getRandomEl(GRUtils.listSmallest(GRUtils.filterSingleKey(Group.groups)));
 		}
 	}
 
 	static class JoinLargest implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return Utils.getRandomEl(GRUtils.listLargest(Group.groups));
+			return Utils.getRandomEl(GRUtils.listLargest(GRUtils.filterSingleKey(Group.groups)));
 		}
 	}
 

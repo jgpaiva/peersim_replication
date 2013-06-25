@@ -28,7 +28,7 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 
 	private static int idLength;
 	private static BigInteger ringSize;
-	private static KeyCreator keyCreator ;
+	public static KeyCreator keyCreator ;
 	private static int replication;
 	public final static TreeSet<Finger> activeNodes = new TreeSet<Finger>();
 
@@ -61,7 +61,7 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 		return true;
 	}
 
-	NeighbourReplication getProtocol(Node node) {
+	public static NeighbourReplication getProtocol(Node node) {
 		NeighbourReplication val = (NeighbourReplication) node.getProtocol(ProtocolStub.pid);
 		return val;
 	}
@@ -204,7 +204,7 @@ public class NeighbourReplication extends ProtocolStub implements Protocol,
 		this.moveReplKeysFrom(sender, target, this.keys);
 	}
 
-	private Finger getSuccessor() {
+	public Finger getSuccessor() {
 		return this.successor;
 	}
 

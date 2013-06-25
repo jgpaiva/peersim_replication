@@ -189,21 +189,25 @@ public class Group {
 
 	private void mergeKeysTo(Group mergeTo) {
 		int oldKeys = this.keys();
+		int oldLoad = this.load();
 		int mergeToKeys = mergeTo.keys();
-		mergeTo.setKeys(mergeToKeys + oldKeys);
-		mergeTo.setLoad(this.load() + mergeTo.load());
+		Group succ = this.successor;
+
+		succ.setKeys(succ.keys() + oldKeys);
+		succ.setLoad(succ.load() + oldLoad);
 		// update key pointers
-		mergeTo.keyBott = this.keyBott;
-		if (mergeTo.keyBott == mergeTo.keyCeil) {
-			mergeTo.keyBott = -1;
-			mergeTo.keyCeil = -1;
+		succ.keyBott = this.keyBott;
+		if (succ.keyBott == succ.keyCeil) {
+			succ.keyBott = -1;
+			succ.keyCeil = -1;
 		}
-		assert GRUtils.calculateIntervalSize(totalKeys, mergeTo.keyBott, mergeTo.keyCeil) == mergeTo.keys() : GRUtils
-				.calculateIntervalSize(totalKeys, mergeTo.keyBott, mergeTo.keyCeil)
-				+ " " + mergeTo.keys();
+		assert GRUtils.calculateIntervalSize(totalKeys, succ.keyBott, succ.keyCeil) == succ.keys() : GRUtils
+				.calculateIntervalSize(totalKeys, succ.keyBott, succ.keyCeil)
+				+ " " + succ.keys();
 
 		assert (oldKeys >= 0 && mergeToKeys >= 0) : oldKeys + " " + mergeToKeys;
-		for (Node it : this.successor.finger) {
+		
+		for (Node it : succ.finger) {
 			GroupReplication.getProtocol(it).sendMessage(
 					new GroupReplication.KeyTransferMessage(oldKeys));
 		}
@@ -212,7 +216,7 @@ public class Group {
 					new GroupReplication.KeyTransferMessage(mergeToKeys));
 		}
 
-		int tKeys = this.successor.finger.size() * oldKeys + this.finger.size() * mergeToKeys;
+		int tKeys = succ.finger.size() * oldKeys + this.finger.size() * mergeToKeys;
 		System.out.println("M " + CommonState.getTime() + " " + GroupReplication.getActiveNodes().size()
 				+ " " + tKeys);
 	}

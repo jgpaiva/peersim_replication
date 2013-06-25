@@ -20,10 +20,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -54,44 +52,47 @@ public class Queries extends ControlImpl {
 		System.err.println("Starting Queries. Node is:"
 				+ Network.get(0).getProtocol(pid).getClass().getName() + " vservers is:" + numVservers);
 
-		int[] nodeLoads = new int[Network.size()];
+		int[] nodeKeyLoad = new int[Network.size()];
 		Set<Node>[] monitoring = initMonitoring();
+		int[] nodelLoad = new int[Network.size()];
 
 		if (Network.get(0).getProtocol(this.pid) instanceof GroupReplication) {
-			int[] nodeRealLoad = new int[Network.size()];
-			queryGroupReplication(nodeLoads, nodeRealLoad, monitoring);
-			genLoadsAndPrint(nodeRealLoad, "load:");
+			queryGroupReplication(nodeKeyLoad, nodelLoad, monitoring);
 			genRealLoadAndPrint("realLoad:");
-
 		} else if (Network.get(0).getProtocol(this.pid) instanceof BestNodeReplication) {
-			queryBestNodeReplication(nodeLoads, monitoring);
-
+			queryBestNodeReplication(nodeKeyLoad, nodelLoad, monitoring);
 		} else if (Network.get(0).getProtocol(this.pid) instanceof NeighbourReplication) {
-			queryNeighbourReplication(nodeLoads, monitoring);
+			queryNeighbourReplication(nodeKeyLoad, nodelLoad, monitoring);
 		}
-		genLoadsAndPrint(nodeLoads, "keyLoad:");
+		genLoadsAndPrint(nodelLoad, "load:");
+		genLoadsAndPrint(nodeKeyLoad, "keyLoad:");
 		genKeysAndPrint("keys:");
 		genMonitoringAndPrint(monitoring, "mon:");
 
 		// deal with virtual nodes
 		if (Network.get(0).getProtocol(pid) instanceof NeighbourReplication && numVservers > 0) {
-			nodeLoads = new int[Network.size()];
+			nodeKeyLoad = new int[Network.size()];
+			nodelLoad = new int[Network.size()];
 			monitoring = initMonitoring();
-			queryVirtualNodes(nodeLoads, monitoring);
-			genLoadsAndPrint(nodeLoads, "vnode_keyLoad:");
+			queryVirtualNodes(nodeKeyLoad, nodelLoad, monitoring);
+			genLoadsAndPrint(nodeKeyLoad, "vnode_keyLoad:");
 			genKeysAndPrint("vnode_keys:");
 			genMonitoringAndPrint(monitoring, "vnode_mon:");
+			genLoadsAndPrint(nodelLoad, "vnode_load:");
+			genRealLoadAndPrint("vnode_realLoad:");
 		}
 		return false;
 	}
 
-	private void queryVirtualNodes(int[] nodeLoads, Set<Node>[] monitoring) {
+	private void queryVirtualNodes(int[] nodeKeyLoads, int[] nodeRealLoad, Set<Node>[] monitoring) {
 		int replication = ((NeighbourReplication) Network.get(0).getProtocol(this.pid))
 				.getReplicationDegree();
 
 		Pair<Finger, Integer>[] vnodes = createVnodes(NeighbourReplication.activeNodes, pid, numVservers);
 
 		int counter = 0;
+		Key[] keyArray = NeighbourReplication.keyCreator.getKeyArray();
+		int keyCounter = 0;
 		for (int vnodeIndex = 0; vnodeIndex < vnodes.length; vnodeIndex++) {// all
 																			// vnodes
 			Pair<Finger, Integer> currPair = vnodes[vnodeIndex];
@@ -105,31 +106,44 @@ public class Queries extends ControlImpl {
 				}
 			}
 			for (int it = 0; it < keys; it++) { // all keys
-				incrLoadRandomNode(nodeLoads, options);
+				incrLoadRandomNode(nodeKeyLoads, options);
+
+				for (int i = 0; i < keyArray[keyCounter].load; i++) {
+					incrLoadRandomNode(nodeRealLoad, options);
+				}
+				keyCounter++;
 			}
 			printStatus(++counter, vnodes.length);
 		}
 	}
 
-	private void queryNeighbourReplication(final int[] nodeLoads, final Set<Node>[] monitoring) {
-		int counter = 0;
+	private void queryNeighbourReplication(final int[] nodeKeys, int[] nodeLoad, final Set<Node>[] monitoring) {
 		int replication = ((NeighbourReplication) Network.get(0).getProtocol(this.pid))
 				.getReplicationDegree();
-		for (Finger f : NeighbourReplication.activeNodes) {
-			ArrayList<Node> options = getNeighbourOptions(replication, f.n);
+		Node current = NeighbourReplication.activeNodes.first().n;
+		int keyCounter = 0;
+		Key[] keys = NeighbourReplication.keyCreator.getKeyArray();
+		for (int nodeIndex = 0; nodeIndex < NeighbourReplication.activeNodes.size(); nodeIndex++) {
+			ArrayList<Node> options = getNeighbourOptions(replication, current);
 
 			for (Node it : options)
-				incrMonitoring(monitoring, f.n, it);
+				incrMonitoring(monitoring, current, it);
 
-			options.add(f.n);
-			for (int it = 0; it < ((NeighbourReplication) f.n.getProtocol(this.pid)).getMyKeys(); it++) {
-				incrLoadRandomNode(nodeLoads, options);
+			options.add(current);
+			for (int it = 0; it < ((NeighbourReplication) current.getProtocol(this.pid)).getMyKeys(); it++) {
+				incrLoadRandomNode(nodeKeys, options);
+
+				for (int i = 0; i < keys[keyCounter].load; i++) {
+					incrLoadRandomNode(nodeLoad, options);
+				}
+				keyCounter++;
 			}
-			printStatus(++counter, NeighbourReplication.activeNodes.size());
+			printStatus(nodeIndex, NeighbourReplication.activeNodes.size());
+			current = NeighbourReplication.getProtocol(current).getSuccessor().n;
 		}
 	}
 
-	private void queryBestNodeReplication(int[] nodeLoads, Set<Node>[] monitoring) {
+	private void queryBestNodeReplication(int[] nodeKeys, int[] nodeLoad, Set<Node>[] monitoring) {
 		int counter = 0;
 		TreeSet<Key> keys = BestNodeReplication.getAllKeys();
 		for (Key it : keys) {
@@ -144,7 +158,11 @@ public class Queries extends ControlImpl {
 			}
 			options.add(key.ownerNode);
 
-			incrLoadRandomNode(nodeLoads, options);
+			incrLoadRandomNode(nodeKeys, options);
+
+			for (int i = 0; i < it.load; i++) {
+				incrLoadRandomNode(nodeLoad, options);
+			}
 
 			printStatus(++counter, keys.size());
 		}
@@ -185,7 +203,7 @@ public class Queries extends ControlImpl {
 		}
 	}
 
-	private void incrMonitoring(Set<Node>[] monitoring, Node fromNode, Node toNode) {
+	private static void incrMonitoring(Set<Node>[] monitoring, Node fromNode, Node toNode) {
 		monitoring[fromNode.getIndex()].add(toNode);
 	}
 
@@ -247,7 +265,7 @@ public class Queries extends ControlImpl {
 		printFreqsAndStats(monitorFreqs, monitorStats, prefix);
 	}
 
-	private void addMonitoring(Set<Node>[] monitoring, IncrementalFreq monitorFreqs,
+	private static void addMonitoring(Set<Node>[] monitoring, IncrementalFreq monitorFreqs,
 			IncrementalStats monitorStats) {
 		for (Set<Node> it : monitoring) {
 			if (it == null)
@@ -341,7 +359,7 @@ public class Queries extends ControlImpl {
 		return total;
 	}
 
-	private int getTotalNodes(int[] nodeLoads) {
+	private static int getTotalNodes(int[] nodeLoads) {
 		int acc = 0;
 		for (int it : nodeLoads)
 			if (it >= 0)
@@ -401,7 +419,7 @@ public class Queries extends ControlImpl {
 		}
 	}
 
-	private List<Node> getOptionsArray(int replication, Pair<Finger, Integer>[] vnodes, int currentIndex) {
+	private static List<Node> getOptionsArray(int replication, Pair<Finger, Integer>[] vnodes, int currentIndex) {
 		Set<Node> options = new HashSet<Node>();
 		// FIXME is the +1 correct?
 		for (int it = currentIndex; options.size() < replication + 1; it = (it - 1 + vnodes.length)
