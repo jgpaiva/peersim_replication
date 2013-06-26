@@ -405,22 +405,24 @@ public class Group {
 					.keys() : GRUtils.calculateIntervalSize(totalKeys, oldGroup.keyBott, oldGroup.keyCeil)
 					+ " " + oldGroup.keys();
 		}
-
-		static LoadSpliter instance = new LoadSpliter();
 	}
 
 	public static class LoadAndResortSpliter implements KeyRangeBreaker {
+		private LoadSpliter ins;
+
+		LoadAndResortSpliter() {
+			this.ins = new LoadSpliter();
+		}
+
 		@Override
 		public void getNewKeys(int initialSize, int newSize, Group oldGroup, Group newGroup, Key[] keyArray) {
-			LoadSpliter.instance.getNewKeys(initialSize, newSize, oldGroup, newGroup, keyArray);
+			ins.getNewKeys(initialSize, newSize, oldGroup, newGroup, keyArray);
 
 			// after moving keys around, move nodes to match the keys
 			if (oldGroup.keys() > newGroup.keys()) {
 				oldGroup.switchGroupMembers(newGroup);
 			}
 		}
-
-		static LoadSpliter instance = new LoadSpliter();
 	}
 
 	public interface GroupPicker {
@@ -432,8 +434,6 @@ public class Group {
 		public Group getGroup(Group g) {
 			return g.successor;
 		}
-
-		static SuccessorPicker instance = new SuccessorPicker();
 	}
 
 	static class LoadedPicker implements GroupPicker {
@@ -451,8 +451,6 @@ public class Group {
 			}
 			return mostLoaded;
 		}
-
-		static LoadedPicker instance = new LoadedPicker();
 	}
 
 	static class LargestPicker implements GroupPicker {
@@ -469,8 +467,6 @@ public class Group {
 			}
 			return largest;
 		}
-
-		static LargestPicker instance = new LargestPicker();
 	}
 
 	static class ThisPicker implements GroupPicker {
@@ -478,8 +474,6 @@ public class Group {
 		public Group getGroup(Group g) {
 			return g;
 		}
-
-		static ThisPicker instance = new ThisPicker();
 	}
 
 	static class RandomPicker implements GroupPicker {
@@ -487,8 +481,6 @@ public class Group {
 		public Group getGroup(Group g) {
 			return Utils.getRandomEl(GRUtils.filterSingleKey2(Group.groups));
 		}
-
-		static RandomPicker instance = new RandomPicker();
 	}
 
 	static class RandomNotThisPicker implements GroupPicker {
@@ -502,8 +494,6 @@ public class Group {
 				toMerge = Utils.getRandomEl(gs);
 			return toMerge;
 		}
-
-		static RandomNotThisPicker instance = new RandomNotThisPicker();
 	}
 
 	public void updateMembers() {

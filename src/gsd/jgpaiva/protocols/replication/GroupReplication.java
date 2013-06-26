@@ -190,31 +190,31 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 			GroupReplication.joiner = new JoinSmallestPreemptive();
 
 		if (mode == Mode.LNLB_PREEMPTIVE) {
-			Group.keyRangeBreaker = Group.LoadAndResortSpliter.instance;
+			Group.keyRangeBreaker = new Group.LoadAndResortSpliter();
 		} else {
-			Group.keyRangeBreaker = Group.LoadSpliter.instance;
+			Group.keyRangeBreaker = new Group.LoadSpliter();
 		}
 
 		if (mode == Mode.RANDOM) {
-			Group.mergeP = Group.RandomNotThisPicker.instance;
+			Group.mergeP = new Group.RandomNotThisPicker();
 		} else if (mode == Mode.SURPLUS) {
-			Group.mergeP = Group.LargestPicker.instance;
+			Group.mergeP = new Group.LargestPicker();
 		} else if (mode == Mode.LNLB_MERGE) {
-			Group.mergeP = Group.LoadedPicker.instance;
+			Group.mergeP = new Group.LoadedPicker();
 		} else {
-			Group.mergeP = Group.SuccessorPicker.instance;
+			Group.mergeP = new Group.SuccessorPicker();
 		}
 
 		if (mode == Mode.RANDOM) {
-			Group.divideP = Group.RandomPicker.instance;
+			Group.divideP = new Group.RandomPicker();
 		} else {
-			Group.divideP = Group.ThisPicker.instance;
+			Group.divideP = new Group.ThisPicker();
 		}
 
 		if (mode == Mode.LNLB_PREEMPTIVE) {
-			Group.groupSplitter = ReliabilitySplit.instance;
+			Group.groupSplitter = new ReliabilitySplit();
 		} else {
-			Group.groupSplitter = RandomSplit.instance;
+			Group.groupSplitter = new RandomSplit();
 		}
 	}
 
