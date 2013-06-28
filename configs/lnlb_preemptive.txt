@@ -39,8 +39,9 @@ protocol.r.step CYCLE
 protocol.r.minrepl 3
 protocol.r.maxrepl 9
 protocol.r.mode lnlb_preemptive
-protocol.r.slice 0.5
-protocol.r.reliable 0.5
+protocol.r.slice 0.01
+protocol.r.reliable 0.1
+
 
 ################### initialization ======================
 

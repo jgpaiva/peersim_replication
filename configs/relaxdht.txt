@@ -1,5 +1,5 @@
 # network size
-SIZE 100000
+SIZE 1000000
 KEYS 100000
 
 #SIZE 500
@@ -36,10 +36,10 @@ simulation.logtime CYCLE
 global.idLength 128
 global.replication REPLICATION
 
-protocol.r gsd.jgpaiva.protocols.replication.BestNodeReplication2
+protocol.r gsd.jgpaiva.protocols.replication.BestNodeReplication
 protocol.r.step CYCLE
 protocol.r.window (REPLICATION-1)*10
-protocol.r.keepatsuccessor false
+protocol.r.keepatsuccessor true
 protocol.r.usebestnodes false
 #
 #
@@ -58,7 +58,8 @@ control.memb.protocol r
 control.memb.step 1
 
 keyCreator.nkeys KEYS
-keyCreator.initmode random
+keyCreator.initmode read
+keyCreator.readfile arguments/zipf.dist
 
 #
 ################ observers  ==============================

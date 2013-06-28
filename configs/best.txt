@@ -1,5 +1,5 @@
 # network size
-SIZE 100000
+SIZE 1000000
 KEYS 100000
 
 #SIZE 500
@@ -28,6 +28,7 @@ network.size SIZE
 network.node gsd.jgpaiva.structures.MyNode
 simulation.endtime CYCLE*CYCLES
 simulation.logtime CYCLE
+#simulation.cycles CYCLE*CYCLES
 #
 ################### protocols ===========================
  
@@ -35,8 +36,11 @@ simulation.logtime CYCLE
 global.idLength 128
 global.replication REPLICATION
 
-protocol.r gsd.jgpaiva.protocols.replication.NeighbourReplication
+protocol.r gsd.jgpaiva.protocols.replication.BestNodeReplication
 protocol.r.step CYCLE
+protocol.r.window (REPLICATION-1)*10
+protocol.r.keepatsuccessor false
+protocol.r.usebestnodes true
 #
 #
 ################### initialization ======================
@@ -54,7 +58,8 @@ control.memb.protocol r
 control.memb.step 1
 
 keyCreator.nkeys KEYS
-keyCreator.initmode random
+keyCreator.initmode read
+keyCreator.readfile arguments/zipf.dist
 
 #
 ################ observers  ==============================
@@ -75,6 +80,18 @@ control.keys.protocol r
 control.keys.step CYCLE
 control.keys.initstep 0
 
+control.monitor gsd.jgpaiva.observers.replication.MonitorObserver
+control.monitor.protocol r
+control.monitor.step 1
+control.monitor.initstep ENDTIME+10
+control.monitor.finalstep ENDTIME+10
+
+control.chainobs gsd.jgpaiva.observers.replication.ChainReplicationObserver
+control.chainobs.protocol r
+control.chainobs.step 1
+control.chainobs.initstep ENDTIME+10
+control.chainobs.finalstep ENDTIME+10
+
 control.queries gsd.jgpaiva.observers.replication.Queries
 control.queries.protocol r
 control.queries.step 1
@@ -85,4 +102,4 @@ control.queries.repeats 10
 
 include.protocol r
 
-include.control memb debug messagecost keys queries
+include.control memb debug messagecost keys queries monitor chainobs

@@ -1,5 +1,5 @@
 # network size
-SIZE 100000
+SIZE 1000000
 KEYS 100000
 
 #SIZE 500
@@ -34,13 +34,12 @@ simulation.logtime CYCLE
 global.idLength 128
 global.replication 0
 
-protocol.r gsd.jgpaiva.protocols.replication.GroupReplication2
+protocol.r gsd.jgpaiva.protocols.replication.GroupReplication
 protocol.r.step CYCLE
 protocol.r.minrepl 3
 protocol.r.maxrepl 9
-protocol.r.mode smallest_preemptive
-#
-#
+protocol.r.mode preemptive
+
 ################### initialization ======================
 
 #
@@ -56,7 +55,8 @@ control.memb.protocol r
 control.memb.step 1
 
 keyCreator.nkeys KEYS
-keyCreator.initmode random
+keyCreator.initmode read
+keyCreator.readfile arguments/zipf.dist
 
 #
 ################ observers  ==============================
@@ -100,9 +100,35 @@ control.queries.initstep ENDTIME+10
 control.queries.finalstep ENDTIME+10
 control.queries.repeats 10
 
+control.queriescheck gsd.jgpaiva.observers.replication.Queries
+control.queriescheck.protocol r
+control.queriescheck.step 1
+control.queriescheck.initstep 26470
+control.queriescheck.finalstep ENDTIME+10
+control.queriescheck.repeats 1
+control.queriescheck.doevery 10000
+
+control.groups gsd.jgpaiva.observers.replication.GroupObserver
+control.groups.protocol r
+control.groups.step 1
+control.groups.initstep ENDTIME+10
+control.groups.finalstep ENDTIME+10
+
+control.groups2 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups2.protocol r
+control.groups2.step 1
+control.groups2.initstep 26468
+control.groups2.finalstep 26472
+
+control.groups3 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups3.protocol r
+control.groups3.step 1
+control.groups3.initstep 1
+control.groups3.finalstep ENDTIME+10
+control.groups3.doevery 10000
+
 ################ Alignment ================================
 
 include.protocol r
 
-include.control memb debug messagecost keys gsize roundstats queries monitor
-
+include.control memb debug messagecost keys gsize roundstats queries monitor queriescheck groups groups2 groups3

@@ -1,5 +1,5 @@
 # network size
-SIZE 256000
+SIZE 100000
 KEYS 100000
 
 #SIZE 500
@@ -67,7 +67,6 @@ control.resort.finalstep ENDTIME
 control.resort.protocol r
 control.resort.step 1
 
-
 #
 ################ observers  ==============================
 #
@@ -124,8 +123,21 @@ control.groups.step 1
 control.groups.initstep ENDTIME+10
 control.groups.finalstep ENDTIME+10
 
+control.groups2 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups2.protocol r
+control.groups2.step 1
+control.groups2.initstep 26468
+control.groups2.finalstep 26472
+
+control.groups3 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups3.protocol r
+control.groups3.step 1
+control.groups3.initstep 1
+control.groups3.finalstep ENDTIME+10
+control.groups3.doevery 10000
+
 ################ Alignment ================================
 
 include.protocol r
 
-include.control memb debug messagecost keys gsize roundstats queries monitor resort queriescheck groups
+include.control memb debug messagecost keys gsize roundstats queries monitor queriescheck resort groups groups2 groups3

@@ -1,5 +1,5 @@
 # network size
-SIZE 100000
+SIZE 1000000
 KEYS 100000
 
 #SIZE 500
@@ -15,6 +15,8 @@ CYCLE 1000
 ENDTIME 2196717
 
 OBSERVERFREQUENCY1 10
+
+REPLICATION 6
 
 # parameters of message transfer
 # delay values here are relative to cycle length, in percentage,
@@ -32,13 +34,13 @@ simulation.logtime CYCLE
  
  
 global.idLength 128
-global.replication 0
+global.replication REPLICATION
 
-protocol.r gsd.jgpaiva.protocols.replication.GroupReplication2
+protocol.r gsd.jgpaiva.protocols.replication.BestNodeReplication
 protocol.r.step CYCLE
-protocol.r.minrepl 3
-protocol.r.maxrepl 9
-protocol.r.mode lnlb_supersize
+protocol.r.window (REPLICATION-1)*10
+protocol.r.keepatsuccessor false
+protocol.r.usebestnodes false
 #
 #
 ################### initialization ======================
@@ -56,7 +58,8 @@ control.memb.protocol r
 control.memb.step 1
 
 keyCreator.nkeys KEYS
-keyCreator.initmode random
+keyCreator.initmode read
+keyCreator.readfile arguments/zipf.dist
 
 #
 ################ observers  ==============================
@@ -77,21 +80,17 @@ control.keys.protocol r
 control.keys.step CYCLE
 control.keys.initstep 0
 
-control.gsize gsd.jgpaiva.observers.replication.GroupSizeObserver
-control.gsize.protocol r
-control.gsize.step CYCLE
-control.gsize.initstep 0
-
-control.roundstats gsd.jgpaiva.observers.replication.RoundStats
-control.roundstats.protocol r
-control.roundstats.step CYCLE
-control.roundstats.initstep 0
-
 control.monitor gsd.jgpaiva.observers.replication.MonitorObserver
 control.monitor.protocol r
 control.monitor.step 1
 control.monitor.initstep ENDTIME+10
 control.monitor.finalstep ENDTIME+10
+
+control.chainobs gsd.jgpaiva.observers.replication.ChainReplicationObserver
+control.chainobs.protocol r
+control.chainobs.step 1
+control.chainobs.initstep ENDTIME+10
+control.chainobs.finalstep ENDTIME+10
 
 control.queries gsd.jgpaiva.observers.replication.Queries
 control.queries.protocol r
@@ -99,9 +98,8 @@ control.queries.step 1
 control.queries.initstep ENDTIME+10
 control.queries.finalstep ENDTIME+10
 control.queries.repeats 10
-
 ################ Alignment ================================
 
 include.protocol r
 
-include.control memb debug messagecost keys gsize roundstats queries monitor
+include.control memb debug messagecost keys queries monitor chainobs
