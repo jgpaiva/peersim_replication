@@ -69,7 +69,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 	static int minReplication;
 
-	private Group myGroup;
+	Group myGroup;
 	protected int deathTime;
 	private int chainMessageCounter = 0;
 	private boolean isReliable;
@@ -83,7 +83,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	 * Nodes currently active in the system, sorted by death date. More reliable
 	 * nodes are at the end
 	 */
-	private static final TreeSet<Node> activeNodes = new TreeSet<Node>(new Comparator<Node>() {
+	static final TreeSet<Node> activeNodes = new TreeSet<Node>(new Comparator<Node>() {
 		@Override
 		public int compare(Node o1, Node o2) {
 			GroupReplication p1 = (GroupReplication) o1.getProtocol(pid);
@@ -197,8 +197,6 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 
 		if (mode == Mode.RANDOM) {
 			Group.mergeP = new Group.RandomNotThisPicker();
-		} else if (mode == Mode.SURPLUS) {
-			Group.mergeP = new Group.LargestPicker();
 		} else if (mode == Mode.LNLB_MERGE) {
 			Group.mergeP = new Group.LoadedPicker();
 		} else {
@@ -281,6 +279,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		if (mode == Mode.SCATTER || mode == Mode.LNLB_REBALANCE)
 			checkBalance();
 		System.out.println("J " + CommonState.getTime() + " " + activeNodes.size() + " " + this.getKeys());
+		nodeJoinNotification(this.getNode());
 	}
 
 	private static void checkBalance() {
@@ -355,10 +354,16 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		}
 	}
 
+	interface MembershipNotifiable {
+		void notifyJoin(Node n);
+
+		void notifyKill(Node n);
+	}
+
 	static class JoinPreemtive implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getNextGroupDeath(GRUtils.filterSingleKey(Group.groups));
+			return GRUtils.getNextGroupDeath(GRUtils.filterSingleKey(Group.groups)).fst;
 		}
 	}
 
@@ -372,7 +377,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 	static class JoinSmallestPreemptive implements Joiner {
 		@Override
 		public Group getGroupToJoin(GroupReplication n) {
-			return GRUtils.getNextGroupDeath(GRUtils.listSmallest(GRUtils.filterSingleKey(Group.groups)));
+			return GRUtils.getNextGroupDeath(GRUtils.listSmallest(GRUtils.filterSingleKey(Group.groups))).fst;
 		}
 	}
 
@@ -402,8 +407,26 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		if (tempGroup.size() < minReplication) {
 			tempGroup.merge();
 		}
-		if (tempGroup.size() > maxReplication) {
+		if (tempGroup.size() > maxReplication && (mode != Mode.SUPERSIZE || tempGroup.keys() > 1)) {
 			tempGroup.divide();
+		}
+	}
+
+	static Collection<MembershipNotifiable> membershipChangeNotifiable = new HashSet<MembershipNotifiable>();
+
+	public static void registerMembershipChange(MembershipNotifiable cls) {
+		membershipChangeNotifiable.add(cls);
+	}
+
+	public static void nodeJoinNotification(Node n) {
+		for (MembershipNotifiable i : membershipChangeNotifiable) {
+			i.notifyJoin(n);
+		}
+	}
+
+	public static void nodeKillNotification(Node n) {
+		for (MembershipNotifiable i : membershipChangeNotifiable) {
+			i.notifyKill(n);
 		}
 	}
 
@@ -443,6 +466,7 @@ public class GroupReplication extends ProtocolStub implements Protocol, UptimeSi
 		GroupReplication.checkIntegrity();
 		activeNodes.remove(this.getNode());
 		System.out.println("K " + CommonState.getTime() + " " + activeNodes.size() + " " + keys);
+		nodeKillNotification(this.getNode());
 	}
 
 	static final class KeyTransferMessage implements CostAwareMessage {

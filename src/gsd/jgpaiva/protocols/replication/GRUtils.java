@@ -17,19 +17,21 @@ import peersim.core.Node;
 public class GRUtils {
 
 	/***************** DEATH TIME related functions ******************/
-	
-	public static Group getNextGroupDeath(Collection<Group> lst) {
+
+	public static Pair<Group, Node> getNextGroupDeath(Collection<Group> lst) {
 		Group group = null;
 		int minTime = 0;
+		Node node = null;
 
 		for (Group g : lst)
 			for (Node n : g.getFinger())
 				if (group == null || getNodeDeath(n) < minTime) {
 					group = g;
 					minTime = getNodeDeath(n);
+					node = n;
 				}
 
-		return group;
+		return new Pair<Group, Node>(group, node);
 	}
 
 	public static int getNodeDeath(Node n) {

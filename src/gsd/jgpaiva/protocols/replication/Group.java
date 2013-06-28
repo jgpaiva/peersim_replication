@@ -459,7 +459,7 @@ public class Group {
 			if (Group.groups.size() == 1)
 				return null;
 			Group largest = null;
-			for (Group i : GRUtils.filterSingleKey(Group.groups)) {
+			for (Group i : GRUtils.filterSingleKey2(Group.groups)) {
 				if (i != g) {
 					if (largest == null || i.size() > largest.size())
 						largest = i;
