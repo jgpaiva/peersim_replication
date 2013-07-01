@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from utils import get_numbers, transpose, plot_and_save, get_num_dict, expand_num_dict, plt
+from utils import get_numbers, transpose, get_num_dict, expand_num_dict, plt, prepare, plot
+import glob
 import glob
 import fileinput
 
@@ -62,7 +63,12 @@ if __name__ == "__main__":
     plt.xlim(0,1000000)
 
     out_file = "intro_lb_chord.pdf"
-    plot_and_save(
-            out_file,
-            (x_values,chord_loads,"Neighbor Replication")
-            ,(x_values,vserver_loads,"Virtual Servers"))
+
+    d1 = prepare(x_values,chord_values)
+    d2 = prepare(x_values,vserver_loads)
+
+    d1['label'] = 'Neighbor Replication'
+    d1['linestyle'] = 'dashed'
+    d2['label'] = "Virtual Servers"
+
+    plot(out_file,d1,d2)

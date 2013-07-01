@@ -77,7 +77,12 @@ if __name__ == "__main__":
     plt.xlim(0,1000000)
 
     out_file = "intro_lb_ma.pdf"
-    plot_and_save(
-            out_file,
-            (x_values1,chord_loads,"Neighbor Replication"),
-            (x_values2,best_loads,"Most-Available Replication"))
+
+    d1 = prepare(x_values1,chord_values)
+    d2 = prepare(x_values2,best_values)
+
+    d1['label'] = 'Neighbor Replication'
+    d1['linestyle'] = 'dashed'
+    d2['label'] = 'Most-Available Replication'
+
+    plot(out_file,d1,d2)

@@ -46,7 +46,12 @@ if __name__ == "__main__":
     plt.xlim(0,1000000)
 
     out_file = "intro_mon_chord.pdf"
-    plot_and_save(
-            out_file,
-            (x_values,chord_monitor,"Neighbor Replication"),
-            (x_values,vserver_monitor, "Virtual Servers"))
+
+    d1 = prepare(x_values,chord_values)
+    d2 = prepare(x_values,vserver_loads)
+
+    d1['label'] = 'Neighbor Replication'
+    d1['linestyle'] = 'dashed'
+    d2['label'] = "Virtual Servers"
+
+    plot(out_file,d1,d2)

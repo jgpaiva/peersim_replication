@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from utils import get_numbers, transpose, plot_and_save, get_num_dict, expand_num_dict, plt
+from utils import get_numbers, transpose, get_num_dict, expand_num_dict, plt, prepare, plot
 import glob
 import fileinput
 
@@ -44,7 +44,13 @@ if __name__ == "__main__":
     plt.xlim(0,1000000)
 
     out_file = "intro_rep_ma.pdf"
-    plot_and_save(
-            out_file,
-            (x_values1,chord_values,"Neighbor Replication"),
-            (x_values2,best_values,"Most-Available Replication"))
+
+    d1 = prepare(x_values1,chord_values)
+    d2 = prepare(x_values2,best_values)
+
+    d1['label'] = 'Neighbor Replication'
+    d1['linestyle'] = 'dashed'
+    d2['label'] = 'Most-Available Replication'
+
+    plot(out_file,d1,d2)
+

@@ -79,7 +79,16 @@ public class Queries extends ControlImpl {
 			genKeysAndPrint("vnode_keys:");
 			genMonitoringAndPrint(monitoring, "vnode_mon:");
 			genLoadsAndPrint(nodelLoad, "vnode_load:");
-			genRealLoadAndPrint("vnode_realLoad:");
+		}
+		if (Network.get(0).getProtocol(pid) instanceof NeighbourReplication) {
+			nodeKeyLoad = new int[Network.size()];
+			nodelLoad = new int[Network.size()];
+			monitoring = initMonitoring();
+			queryMultiPublication(nodeKeyLoad, nodelLoad, monitoring);
+			genLoadsAndPrint(nodeKeyLoad, "multi_keyLoad:");
+			genKeysAndPrint("multi_keys:");
+			genMonitoringAndPrint(monitoring, "multi_mon:");
+			genLoadsAndPrint(nodelLoad, "multi_load:");
 		}
 		return false;
 	}
@@ -114,6 +123,41 @@ public class Queries extends ControlImpl {
 				keyCounter++;
 			}
 			printStatus(++counter, vnodes.length);
+		}
+	}
+
+	private void queryMultiPublication(int[] nodeKeyLoads, int[] nodeRealLoad, Set<Node>[] monitoring) {
+		int replication = ((NeighbourReplication) Network.get(0).getProtocol(this.pid))
+				.getReplicationDegree();
+
+		if (NeighbourReplication.activeNodes.size() < 20 * replication)
+			return;
+
+		Key[] arr = NeighbourReplication.keyCreator.getKeyArray();
+		HashSet<Node>[] options_arr = new HashSet[arr.length];
+		for (int it = 0; it < arr.length; it++) {
+			HashSet<Node> curr = new HashSet<Node>();
+			options_arr[it] = curr;
+			while (curr.size() < replication) {
+				curr.add(Utils.getRandomEl(NeighbourReplication.activeNodes).n);
+			}
+		}
+
+		for (int keyIndex = 0; keyIndex < arr.length; keyIndex++) {
+			HashSet<Node> options = options_arr[keyIndex];
+			for (Node it1 : options) {
+				for (Node it2 : options) {
+					if (it1 != it2)
+						incrMonitoring(monitoring, it1, it2);
+				}
+			}
+			incrLoadRandomNode(nodeKeyLoads, options);
+
+			for (int i = 0; i < arr[keyIndex].load; i++) {
+				incrLoadRandomNode(nodeRealLoad, options);
+			}
+			
+			printStatus(keyIndex, arr.length);
 		}
 	}
 
@@ -419,7 +463,8 @@ public class Queries extends ControlImpl {
 		}
 	}
 
-	private static List<Node> getOptionsArray(int replication, Pair<Finger, Integer>[] vnodes, int currentIndex) {
+	private static List<Node> getOptionsArray(int replication, Pair<Finger, Integer>[] vnodes,
+			int currentIndex) {
 		Set<Node> options = new HashSet<Node>();
 		// FIXME is the +1 correct?
 		for (int it = currentIndex; options.size() < replication + 1; it = (it - 1 + vnodes.length)

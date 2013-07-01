@@ -40,6 +40,9 @@ if __name__ == "__main__":
     f = argv[1]
 
     d = dict()
+
+    names = {"J":"Joins","K":"Leaves","D":"Divisions","M":"Merges"}
+
     for i in ["J","K","D","M"]:
         d[i] = {'x':[],'y':[]}
     s = {'x':[],'y':[]}
@@ -51,9 +54,9 @@ if __name__ == "__main__":
             if t < a:
                 continue
 
-            d[line[:1]]['x'].append(t)
+            d[line[:1]]['x'].append(t-a)
             d[line[:1]]['y'].append(k)
-            s['x'].append(t)
+            s['x'].append(t-a)
             s['y'].append(n)
 
     for i in ['J','K']:
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     print "loaded data"
 
     fig = plt.figure()
-    fig.set_size_inches(20,7)
+    fig.set_size_inches(20,5)
 
     axS = fig.add_subplot(511)
 
@@ -85,7 +88,7 @@ if __name__ == "__main__":
         formatter = EngFormatter(places=1)
         ax.yaxis.set_major_formatter(formatter)
         ax.plot(d[i]['x'], d[i]['y'], label=i)
-        ax.text(0.025, 0.95, i, va='top', transform=ax.transAxes, fontsize=textsize)
+        ax.text(0.025, 0.95, names[i], va='top', transform=ax.transAxes, fontsize=textsize)
         print "ax",i,"done"
 
     for p,i in zip(range(514,516),["D","M"]):
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         formatter = EngFormatter(places=1)
         ax.yaxis.set_major_formatter(formatter)
         ax.plot(d[i]['x'], d[i]['y'], 'o', label=i,markersize=10)
-        ax.text(0.025, 0.95, i, va='top', transform=ax.transAxes, fontsize=textsize)
+        ax.text(0.025, 0.95, names[i], va='top', transform=ax.transAxes, fontsize=textsize)
         print "ax",i,"done"
 
     ax.set_xlabel('time')
