@@ -20,10 +20,9 @@ if __name__ == "__main__":
             count = 0
             for line in fileinput.input(f+"/control.messagecost.weighted"):
                 ns = get_numbers(line)
-                if len(ns) > 1:
-                    count += int(ns[-1])
+                count += list(ns)[-1]
 
-            nsize = get_numbers(f)[0]
+            nsize = next(get_numbers(f))
             if "chord" in f:
                 chord_values.append(count/nsize)
                 x_values1.append(nsize)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from utils import get_numbers, transpose, plot_and_save, get_num_dict, expand_num_dict, plt
+from utils import get_numbers, transpose, prepare, plot, get_num_dict, expand_num_dict, plt
 import glob
 import fileinput
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
             chord_loads.append(get_50_percent(loads_d[0]))
 
-            x_values1.append(get_numbers(f)[0])
+            x_values1.append(next(get_numbers(f)))
 
     for f in glob.glob(folder):
         if "best" in f:
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
             best_loads.append(get_50_percent(loads_d[0]))
 
-            x_values2.append(get_numbers(f)[0])
+            x_values2.append(next(get_numbers(f)))
 
     plt.figure().set_size_inches(6.5,5)
     plt.xlabel("#Nodes")
@@ -78,8 +78,8 @@ if __name__ == "__main__":
 
     out_file = "intro_lb_ma.pdf"
 
-    d1 = prepare(x_values1,chord_values)
-    d2 = prepare(x_values2,best_values)
+    d1 = prepare(x_values1,chord_loads)
+    d2 = prepare(x_values2,best_loads)
 
     d1['label'] = 'Neighbor Replication'
     d1['linestyle'] = 'dashed'

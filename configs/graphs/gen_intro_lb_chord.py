@@ -49,7 +49,7 @@ if __name__ == "__main__":
             chord_loads.append(get_50_percent(loads_d[0]))
             vserver_loads.append(get_50_percent(loads_d[1]))
 
-            x_values.append(get_numbers(f)[0])
+            x_values.append(next(get_numbers(f)))
 
     plt.figure().set_size_inches(6.5,5)
     plt.xlabel("#Nodes")
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     out_file = "intro_lb_chord.pdf"
 
-    d1 = prepare(x_values,chord_values)
+    d1 = prepare(x_values,chord_loads)
     d2 = prepare(x_values,vserver_loads)
 
     d1['label'] = 'Neighbor Replication'
