@@ -1,4 +1,20 @@
+~
+.swp
 *.class
+bin
+.classpath
+.project
+.settings
+configs/runs
+configs/gen
+configs/libs
+configs/tmp
+*.jar
+configs/arguments
+*.out
+configs/graphs/*.pdf
+*.pyc
+.DS_Store
 
 # Package Files #
 *.jar

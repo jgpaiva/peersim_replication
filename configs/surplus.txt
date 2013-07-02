@@ -1,0 +1,134 @@
+# network size
+SIZE 1000000
+KEYS 100000
+
+#SIZE 500
+#random.seed 1271601420698
+#KEYS 5000
+ 
+#stabilization period
+STABILIZATION 100
+
+# parameters of periodic execution
+CYCLES 2393
+CYCLE 1000
+ENDTIME 2196717
+
+OBSERVERFREQUENCY1 10
+
+# parameters of message transfer
+# delay values here are relative to cycle length, in percentage,
+# e.g 50 means half the cycle length, 200 twice the cycle length, etc.
+MINDELAY 10
+MAXDELAY 20
+DROP 0.05
+network.size SIZE
+network.node gsd.jgpaiva.structures.MyNode
+simulation.endtime CYCLE*CYCLES
+simulation.logtime CYCLE
+#simulation.cycles CYCLE*CYCLES
+#
+################### protocols ===========================
+ 
+ 
+global.idLength 128
+global.replication 0
+
+protocol.r gsd.jgpaiva.protocols.replication.GroupReplication
+protocol.r.step CYCLE
+protocol.r.minrepl 3
+protocol.r.maxrepl 9
+protocol.r.mode surplus
+
+################### initialization ======================
+
+#
+################ control ==============================
+
+control.memb gsd.jgpaiva.controllers.MembershipController
+control.memb.seed 1
+control.memb.maxnodes SIZE
+control.memb.maxtime CYCLES*CYCLE+10
+control.memb.mintime 26470
+control.memb.finalstep ENDTIME
+control.memb.protocol r
+control.memb.step 1
+
+keyCreator.nkeys KEYS
+keyCreator.initmode read
+keyCreator.readfile arguments/zipf.dist
+
+#
+################ observers  ==============================
+#
+
+control.debug gsd.jgpaiva.observers.Debug
+control.debug.initstep 0
+control.debug.doevery 1
+control.debug.step CYCLE
+
+control.messagecost gsd.jgpaiva.observers.WeightedMessageCostObserver
+control.messagecost.protocol r
+control.messagecost.step CYCLE
+control.messagecost.initstep 0
+
+control.keys gsd.jgpaiva.observers.replication.KeyObserver
+control.keys.protocol r
+control.keys.step CYCLE
+control.keys.initstep 0
+
+control.gsize gsd.jgpaiva.observers.replication.GroupSizeObserver
+control.gsize.protocol r
+control.gsize.step CYCLE
+control.gsize.initstep 0
+
+control.roundstats gsd.jgpaiva.observers.replication.RoundStats
+control.roundstats.protocol r
+control.roundstats.step CYCLE
+control.roundstats.initstep 0
+
+control.monitor gsd.jgpaiva.observers.replication.MonitorObserver
+control.monitor.protocol r
+control.monitor.step 1
+control.monitor.initstep ENDTIME+10
+control.monitor.finalstep ENDTIME+10
+
+control.queries gsd.jgpaiva.observers.replication.Queries
+control.queries.protocol r
+control.queries.step 1
+control.queries.initstep ENDTIME+10
+control.queries.finalstep ENDTIME+10
+control.queries.repeats 10
+
+control.queriescheck gsd.jgpaiva.observers.replication.Queries
+control.queriescheck.protocol r
+control.queriescheck.step 1
+control.queriescheck.initstep 26470
+control.queriescheck.finalstep ENDTIME+10
+control.queriescheck.repeats 1
+control.queriescheck.doevery 10000
+
+control.groups gsd.jgpaiva.observers.replication.GroupObserver
+control.groups.protocol r
+control.groups.step 1
+control.groups.initstep ENDTIME+10
+control.groups.finalstep ENDTIME+10
+
+control.groups2 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups2.protocol r
+control.groups2.step 1
+control.groups2.initstep 26468
+control.groups2.finalstep 26472
+
+control.groups3 gsd.jgpaiva.observers.replication.GroupObserver
+control.groups3.protocol r
+control.groups3.step 1
+control.groups3.initstep 1
+control.groups3.finalstep ENDTIME+10
+control.groups3.doevery 10000
+
+################ Alignment ================================
+
+include.protocol r
+
+include.control memb debug messagecost keys gsize roundstats queries monitor queriescheck groups groups2 groups3
